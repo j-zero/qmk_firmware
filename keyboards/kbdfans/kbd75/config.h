@@ -4,7 +4,7 @@
 
 /* USB Device descriptor parameter */
 #define VENDOR_ID       0x4B42
-#define MANUFACTURER    qmkbuilder
+#define MANUFACTURER    datenpirat
 #define PRODUCT         KBD75
 #define DESCRIPTION     QMK keyboard firmware for KBD75
 
