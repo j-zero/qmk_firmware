@@ -5,6 +5,10 @@ bool swap_backspace_del = false;
 uint16_t del_bspc_lastcode = KC_NO;
 
 
+void matrix_init_user(void){
+  autoshift_disable();
+}
+
 enum custom_keycodes {
   EXPERIMENT = SAFE_RANGE,
   AUTOSHIFT_TOGGLE,
@@ -30,28 +34,28 @@ void custom_autoshift_toggle(void){
       }
 }
 
-void dance_as_finished (qk_tap_dance_state_t *state, void *user_data) {
+void dance_L_SHIFT_finished (qk_tap_dance_state_t *state, void *user_data) {
   if (state->count == 3) {
     register_code (KC_CAPS);
   }
   else if (state->count == 2) {
     custom_autoshift_toggle();
-  } 
+  }
   else {
-    register_code (KC_RSFT);
+    register_code (KC_LSFT);
   }
 }
 
 
-void dance_as_reset (qk_tap_dance_state_t *state, void *user_data) {
+void dance_L_SHIFT_reset (qk_tap_dance_state_t *state, void *user_data) {
   if (state->count == 3) {
     unregister_code (KC_CAPS);
   }
   else if (state->count == 2) {
     //unregister_code (KC_LSFT);
-  } 
+  }
   else {
-    unregister_code (KC_RSFT);
+    unregister_code (KC_LSFT);
   }
 }
 
@@ -70,17 +74,17 @@ void led_set_kb(uint8_t usb_led) {
 
 //Tap Dance Declarations
 enum {
-  TD_SHIFT_CAPS = 0,
-  TD_ESC_RESET,
-  CT_AS
+  TD_L_SHIFT = 0,
+  //TD_ESC_RESET,
+  //TD_SHIFT_CAPS
 };
 
 //Tap Dance Definitions
 qk_tap_dance_action_t tap_dance_actions[] = {
-  [TD_SHIFT_CAPS]  = ACTION_TAP_DANCE_DOUBLE(KC_RSFT, KC_CAPS),
-  [TD_ESC_RESET]  = ACTION_TAP_DANCE_DOUBLE(KC_LCTL, RESET),
-  [CT_AS] = ACTION_TAP_DANCE_FN_ADVANCED (NULL, dance_as_finished, dance_as_reset)
-  
+  //[TD_SHIFT_CAPS]  = ACTION_TAP_DANCE_DOUBLE(KC_RSFT, KC_CAPS),
+  //[TD_ESC_RESET]  = ACTION_TAP_DANCE_DOUBLE(KC_LCTL, RESET),
+  [TD_L_SHIFT] = ACTION_TAP_DANCE_FN_ADVANCED (NULL, dance_L_SHIFT_finished, dance_L_SHIFT_reset)
+
 };
 
 
@@ -88,33 +92,33 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
   // DEFAULT
 	[0] = LAYOUT(
-    KC_ESC,   KC_F1,    KC_F2,    KC_F3,    KC_F4,    KC_F5,    KC_F6,    KC_F7,    KC_F8,    KC_F9,    KC_F10,   KC_F11,   KC_F12,   KC_PSCR,  KC_HOME,   KC_PGUP,
-    KC_GRV,   KC_1,     KC_2,     KC_3,     KC_4,     KC_5,     KC_6,     KC_7,     KC_8,     KC_9,     KC_0,     KC_MINS,  KC_EQL,   _______,  BSPCDEL,    KC_INS,
+    KC_ESC,   KC_F1,    KC_F2,    KC_F3,    KC_F4,    KC_F5,    KC_F6,    KC_F7,    KC_F8,    KC_F9,    KC_F10,   KC_F11,   KC_F12,   KC_PSCR,  KC_HOME,   KC_INS,
+    KC_GRV,   KC_1,     KC_2,     KC_3,     KC_4,     KC_5,     KC_6,     KC_7,     KC_8,     KC_9,     KC_0,     KC_MINS,  KC_EQL,   _______,  BSPCDEL,    KC_PGUP,
     KC_TAB,   KC_Q,     KC_W,     KC_E,     KC_R,     KC_T,     KC_Y,     KC_U,     KC_I,     KC_O,     KC_P,     KC_LBRC,  KC_RBRC,  KC_BSLS,              DELBSPC ,
      MO(5) ,  KC_A,     KC_S,     KC_D,     KC_F,     KC_G,     KC_H,     KC_J,     KC_K,     KC_L,     KC_SCLN,  KC_QUOT,                      KC_ENT,      KC_PGDN,
-    KC_LSHIFT,  KC_NUBS,  KC_Z,     KC_X,     KC_C,     KC_V,     KC_B,     KC_N,     KC_M,     KC_COMM,  KC_DOT,   KC_SLSH,  TD(CT_AS),             KC_UP,   KC_END ,
+    TD(TD_L_SHIFT),  KC_NUBS,  KC_Z,   KC_X,     KC_C,     KC_V,     KC_B,     KC_N,     KC_M,     KC_COMM,  KC_DOT,   KC_SLSH,  RSFT_T(KC_HOME),       KC_UP,   KC_END ,
     KC_LCTL,  KC_LGUI,  KC_LALT,                      KC_SPC,   KC_SPC,   KC_SPC,                       KC_RALT,  LT(4,KC_APP),  KC_RCTL,  KC_LEFT,  KC_DOWN,  KC_RGHT
   ),
 
-  // Functions
+  // Functions I, activated by FN1
 	[4] = LAYOUT(
-      DF(0),    DF(1),    DF(2),  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_SLCK, KC_PAUS , _______,
-    _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_NLCK,   _______,  MARKUP_CODE,  _______, KC_BSPC, KC_DEL,
+      DF(0),    DF(1),    DF(2),  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_SLCK, KC_PAUS , KC_DEL,
+    _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_NLCK,  _______,  MARKUP_CODE,  _______, KC_BSPC, KC_ASUP,
     _______,  _______,  KC_WH_U,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_VOLU,  KC_MUTE,       SWAP_BSPCDEL,
-    _______,  KC_WH_L,  KC_WH_D,  KC_WH_R,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_F20,            KC_CALC,             _______,
-    AUTOSHIFT_TOGGLE,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_VOLD,  KC_CAPS,         KC_PGUP,  _______,
-    _______,  _______,  _______,                  KC_MPLY,  KC_MPLY,  KC_MPLY,                      _______,  _______,   KC_RGUI,           KC_MPRV,   KC_PGDN,  KC_MNXT
+    KC_CAPS,  KC_WH_L,  KC_WH_D,  KC_WH_R,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_F20,            KC_CALC,             KC_ASDN,
+    AUTOSHIFT_TOGGLE,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_VOLD,  KC_ASRP,         KC_PGUP,  _______,
+    _______,  _______,  _______,                  BL_STEP,  BL_STEP,  BL_STEP,                         _______,  _______,  KC_RGUI,           KC_HOME,   KC_PGDN,  KC_END
   ),
 
-    // Functions 2
+    // Functions II, activated by CAPS LOCK
 	[5] = LAYOUT(
-      DF(0),  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,   _______,       RESET, _______, _______,
-    _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______, _______,  MARKUP_CODE,  _______, DELBSPC,  KC_DEL,
+      DF(0),  RGB_M_P,  RGB_M_B,  RGB_M_R,  RGB_M_SW, RGB_M_SN,  RGB_M_K,  RGB_M_X,  RGB_M_G,  RGB_M_T,  _______,  _______,   _______,       RESET, _______, KC_DEL,
+    _______,  RGB_TOG,  RGB_MOD,  RGB_HUI,  RGB_HUD,  RGB_SAI,  RGB_SAD,  RGB_VAI,  RGB_VAD,   BL_DEC,  BL_INC, _______,  MARKUP_CODE,  _______, DELBSPC,  _______,
     _______,  _______,  KC_WH_U,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______, _______,  _______,               BSPCDEL,
     _______,  KC_WH_L,  KC_WH_D,  KC_WH_R,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,                  _______,   _______ ,
-    _______,  RGB_TOG,  RGB_MOD,  RGB_HUI,  RGB_HUD,  RGB_SAI,  RGB_SAD,  RGB_VAI,  RGB_VAD,  BL_TOGG,  BL_STEP,  BL_DEC,  BL_INC,                     KC_PGDN, _______,
-    _______,  _______,  _______,                  _______,  _______,  _______,                      _______,  _______,   _______,             KC_LEFT, KC_PGDN,KC_RGHT
-  ),
+    _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______, _______,  _______,  _______,  KC_RSFT,                    KC_PGDN, _______,
+    _______,  _______,  _______,                  KC_MPLY,  KC_MPLY,  KC_MPLY,                      KC_MSTP,  KC_MPRV,   KC_MNXT,             KC_HOME, KC_PGDN,KC_END
+  ), // BL_TOGG,  BL_STEP,
 
   // GAMING / PLAIN
 	[1] = LAYOUT(
@@ -134,7 +138,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            _______,
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,                      _______,  _______,
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            _______,  _______,
-    _______,  _______,  _______,                      _______,  _______,  _______,                      _______,  _______,  _______,  _______,  _______,   _______
+    _______,  _______,  _______,                      _______,  _______,  _______,                      _______,    MO(4),  _______,  _______,  _______,   _______
   ),
 
     // Empty/Testing
@@ -210,7 +214,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         if (swap_backspace_del){
           register_code(KC_BSPC);
         } else {
-            
+
           register_code(KC_DEL);
         }
       } else {
@@ -219,7 +223,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
       }
       return false;
 
-    
+
     case SWAP_BSPCDEL:
       if (record->event.pressed) {
           swap_backspace_del = !swap_backspace_del;
