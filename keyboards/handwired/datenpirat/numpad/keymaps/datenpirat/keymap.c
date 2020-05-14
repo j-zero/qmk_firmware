@@ -138,15 +138,15 @@ bool led_update_user(led_t led_state) {
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
-
+// Custom Macro-Pad
   [0] = LAYOUT_numpad_5x4(
-    TD(TD_NUM),   KC_PSLS, KC_MUTE, KC_VOLD,
+    TD(TD_NUM),   KC_MPLY, KC_MUTE, KC_VOLD,
     KC_P7,   KC_P8,   KC_P9,
-    KC_P4,   KC_P5,   KC_P6,      KC_VOLU,
+    KC_P4,   KC_P5,   KC_P6,        KC_VOLU,
     KC_P1,   KC_P2,   KC_P3,
     LT(2, KC_P0), TD(TD_DOT_COMMAS), KC_PENT
   ),
-
+// Default numpad
    [1] = LAYOUT_numpad_5x4(
     KC_TRNS, KC_PSLS, KC_PAST,   KC_PMNS,
     KC_P7,      KC_P8,   KC_P9,
