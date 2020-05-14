@@ -26,7 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define PRODUCT         Numpad
 #define DESCRIPTION     QMK keyboard firmware for handwired numpad with 17 keys
 
-#define TAPPING_TERM 400
+#define TAPPING_TERM 200
 
 /* key matrix size */
 #define MATRIX_ROWS 5
