@@ -7,6 +7,10 @@ enum {
   TD_NUM = 1
 };
 
+enum custom_keycodes {
+  DP_CALC = SAFE_RANGE
+};
+
 void dance_NUM_finished (qk_tap_dance_state_t *state, void *user_data) {
   if (state->count == 1) {
     layer_invert(1);
@@ -60,21 +64,19 @@ qk_tap_dance_action_t tap_dance_actions[] = {
 // Other declarations would go here, separated by commas, if you have them
 };
 
-// Light LEDs 9 & 10 in cyan when keyboard layer 1 is active
 const rgblight_segment_t PROGMEM my_layer1_layer[] = RGBLIGHT_LAYER_SEGMENTS(
     { 0, 0, HSV_RED}
 );
-// Light LEDs 11 & 12 in purple when keyboard layer 2 is active
 const rgblight_segment_t PROGMEM my_layer2_layer[] = RGBLIGHT_LAYER_SEGMENTS(
     { 0, 15, HSV_PURPLE}
 );
-// Light LEDs 11 & 12 in purple when keyboard layer 2 is active
 const rgblight_segment_t PROGMEM my_layer3_layer[] = RGBLIGHT_LAYER_SEGMENTS(
-    { 7, 3, HSV_GREEN}
-);
-const rgblight_segment_t PROGMEM my_layer4_layer[] = RGBLIGHT_LAYER_SEGMENTS(
     { 0, 15, HSV_ORANGE}
 );
+const rgblight_segment_t PROGMEM my_layer4_layer[] = RGBLIGHT_LAYER_SEGMENTS(
+    { 7, 3, HSV_GREEN}
+);
+
 // etc..
 
 // Now define the array of layers. Later layers take precedence
@@ -133,6 +135,22 @@ bool led_update_user(led_t led_state) {
     return true;
 }
 
+bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+
+  switch (keycode) {
+    case DP_CALC:
+        if (record->event.pressed) {
+            layer_invert(1);
+            register_code(KC_CALC);
+        } else {
+            unregister_code(KC_CALC);
+        }
+
+        return false;
+  }
+  return true;
+
+};
 
 //In Layer declaration, add tap dance item in place of a key code
 
@@ -144,11 +162,11 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     KC_P7,   KC_P8,   KC_P9,
     KC_P4,   KC_P5,   KC_P6,        KC_VOLU,
     KC_P1,   KC_P2,   KC_P3,
-    LT(2, KC_P0), TD(TD_DOT_COMMAS), KC_PENT
+    LT(3, KC_P0), TD(TD_DOT_COMMAS), KC_PENT
   ),
 // Default numpad
    [1] = LAYOUT_numpad_5x4(
-    KC_TRNS, KC_PSLS, KC_PAST,   KC_PMNS,
+    KC_TRNS,    KC_PSLS, KC_PAST,   KC_PMNS,
     KC_P7,      KC_P8,   KC_P9,
     KC_P4,      KC_P5,   KC_P6,     KC_PPLS,
     KC_P1,      KC_P2,   KC_P3,
@@ -156,18 +174,18 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   ),
 
   [2] = LAYOUT_numpad_5x4(
-    KC_TRNS, RESET, KC_MUTE, KC_VOLD,
-    KC_HOME,   RGB_TOG,   KC_PGUP,
-    KC_BSPC,   KC_ESC,   KC_MPLY, KC_VOLU,
-    KC_END,   RGB_MOD,   KC_PGDN,
-    KC_NO,    KC_PDOT,  KC_CALC
-  ),
-
-  [3] = LAYOUT_numpad_5x4(
     KC_TRNS, KC_NO, KC_MUTE, KC_NO,
     KC_HOME,   KC_MS_UP,   KC_MS_WH_UP,
     KC_MS_LEFT,   KC_MS_DOWN,   KC_MS_RIGHT, KC_VOLU,
     KC_END,   KC_MS_DOWN,   KC_MS_WH_DOWN,
     KC_MS_BTN1,    KC_MS_BTN3,  KC_MS_BTN2
+  ),
+
+  [3] = LAYOUT_numpad_5x4(
+    KC_TRNS,   RGB_MOD,  RGB_TOG, RGB_HUD,
+    RGB_VAI,   RGB_SAI,  KC_PGUP,
+    KC_BSPC,   KC_ESC,   KC_MPLY, RGB_HUI,
+    RGB_VAD,   RGB_SAD,  KC_PGDN,
+    KC_NO,     KC_PDOT,           DP_CALC
   )
 };
