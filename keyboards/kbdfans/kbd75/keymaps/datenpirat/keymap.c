@@ -170,28 +170,28 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
       break;
 
     case SHIFT_BSPCDEL:
-    if (record->event.pressed) {
-        if (get_mods() & MOD_MASK_SHIFT) {
-            saved_mods = get_mods() & MOD_MASK_SHIFT; // Mask off anything that isn't Shift
-            del_mods(saved_mods); // Remove any Shifts present
-            if (!swap_backspace_del){
-              register_code(KC_DEL);
+        if (record->event.pressed) {
+            if (get_mods() & MOD_MASK_SHIFT) {
+                saved_mods = get_mods() & MOD_MASK_SHIFT; // Mask off anything that isn't Shift
+                del_mods(saved_mods); // Remove any Shifts present
+                if (!swap_backspace_del){
+                register_code(KC_DEL);
+                } else {
+                register_code(KC_BSPC);
+                }
             } else {
-              register_code(KC_BSPC);
+                saved_mods = 0; // Clear saved mods so the add_mods() below doesn't add Shifts back when it shouldn't
+                if (!swap_backspace_del){
+                register_code(KC_BSPC);
+                } else {
+                register_code(KC_DEL);
+                }
             }
         } else {
-            saved_mods = 0; // Clear saved mods so the add_mods() below doesn't add Shifts back when it shouldn't
-            if (!swap_backspace_del){
-              register_code(KC_BSPC);
-            } else {
-              register_code(KC_DEL);
-            }
+            add_mods(saved_mods);
+            unregister_code(KC_DEL);
+            unregister_code(KC_BSPC);
         }
-    } else {
-        add_mods(saved_mods);
-        unregister_code(KC_DEL);
-        unregister_code(KC_BSPC);
-    }
 
     return false;
 
@@ -221,7 +221,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         unregister_code(KC_DEL);
         unregister_code(KC_BSPC);
       }
-      return false;
+    return false;
 
 
     case SWAP_BSPCDEL:

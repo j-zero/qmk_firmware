@@ -8,7 +8,8 @@ enum {
 };
 
 enum custom_keycodes {
-  DP_CALC = SAFE_RANGE
+  DP_CALC = SAFE_RANGE,
+  DP_ALTF4
 };
 
 void dance_NUM_finished (qk_tap_dance_state_t *state, void *user_data) {
