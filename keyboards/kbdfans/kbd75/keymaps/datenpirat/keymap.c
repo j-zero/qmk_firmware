@@ -30,9 +30,11 @@ enum {
   //TD_SHIFT_CAPS
 };
 enum custom_keycodes {
+
   AUTOSHIFT_TOGGLE = SAFE_RANGE,
   MARKUP_CODE,
-  REMOVE_LINE
+  REMOVE_LINE,
+  KC_UNSHIFT_DEL
 };
 
 int cur_dance (qk_tap_dance_state_t *state);
@@ -466,7 +468,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   // Shift Layer
 	[2] = LAYOUT(
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,
-    _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_DEL, _______,
+    _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_UNSHIFT_DEL, _______,
     KC_TAB,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            KC_BSPC,
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,                      _______,  _______,
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            _______,  _______,
@@ -502,6 +504,14 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     case REMOVE_LINE:
       if (record->event.pressed) {
           register_code(KC_LSFT); tap_code(KC_HOME); unregister_code(KC_LSFT); tap_code(KC_DEL);
+      } else {
+
+      }
+      break;
+
+    case KC_UNSHIFT_DEL:
+      if (record->event.pressed) {
+          unregister_code(KC_LSFT); tap_code(KC_DEL); register_code(KC_LSFT);
       } else {
 
       }
