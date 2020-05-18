@@ -1,23 +1,75 @@
 #include QMK_KEYBOARD_H
 
 bool autoshift_enabled = false;
-bool swap_backspace_del = false;
-uint16_t del_bspc_lastcode = KC_NO;
+
+
+typedef struct {
+  bool is_press_action;
+  int state;
+} tap;
+
+enum {
+  SINGLE_TAP = 1,
+  SINGLE_HOLD = 2,
+  DOUBLE_TAP = 3,
+  DOUBLE_HOLD = 4,
+  DOUBLE_SINGLE_TAP = 5, //send two single taps
+  TRIPLE_TAP = 6,
+  TRIPLE_HOLD = 7
+};
+
+//Tap Dance Declarations
+enum {
+  TD_END_HOME = 0,
+  TD_PSCR,
+  SUPER_TAB,
+  SUPER_CAPS,
+  SUPER_CTRL
+  //TD_ESC_RESET,
+  //TD_SHIFT_CAPS
+};
+enum custom_keycodes {
+  AUTOSHIFT_TOGGLE = SAFE_RANGE,
+  MARKUP_CODE,
+  REMOVE_LINE
+};
+
+int cur_dance (qk_tap_dance_state_t *state);
+//for the x tap dance. Put it here so it can be used in any keymap
+void x_finished (qk_tap_dance_state_t *state, void *user_data);
+void x_reset (qk_tap_dance_state_t *state, void *user_data);
 
 
 void matrix_init_user(void){
-  autoshift_disable();
+
 }
 
-enum custom_keycodes {
-  EXPERIMENT = SAFE_RANGE,
-  AUTOSHIFT_TOGGLE,
-  MARKUP_CODE,
-  BSPCDEL,
-  DELBSPC,
-  SWAP_BSPCDEL,
-  SHIFT_BSPCDEL
-};
+
+
+const rgblight_segment_t PROGMEM my_layer1_layer[] = RGBLIGHT_LAYER_SEGMENTS(
+    { 0, 0, 0, 0, 0}
+);
+const rgblight_segment_t PROGMEM my_layer2_layer[] = RGBLIGHT_LAYER_SEGMENTS(
+    { 0, 16, HSV_PINK}
+);
+const rgblight_segment_t PROGMEM my_layer3_layer[] = RGBLIGHT_LAYER_SEGMENTS(
+    { 0, 16, HSV_WHITE},
+    { 10, 1, HSV_RED}
+);
+const rgblight_segment_t PROGMEM my_layer4_layer[] = RGBLIGHT_LAYER_SEGMENTS(
+    { 0, 16, HSV_WHITE},
+    { 15, 1, HSV_RED}
+);
+
+// etc..
+
+// Now define the array of layers. Later layers take precedence
+const rgblight_segment_t* const PROGMEM my_rgb_layers[] = RGBLIGHT_LAYERS_LIST(
+    my_layer1_layer,    // Overrides caps lock layer
+    my_layer2_layer,     // Overrides other layers
+    my_layer3_layer,     // Overrides other layers
+    my_layer4_layer     // Overrides other layers
+);
 
 void custom_autoshift_toggle(void){
       if (autoshift_enabled) {
@@ -34,32 +86,46 @@ void custom_autoshift_toggle(void){
       }
 }
 
-void dance_L_SHIFT_finished (qk_tap_dance_state_t *state, void *user_data) {
-  if (state->count == 3) {
-    register_code (KC_CAPS);
+
+void dance_PSCR_finished (qk_tap_dance_state_t *state, void *user_data) {
+  if (state->count == 1) {
+    register_code (KC_PSCR);
   }
   else if (state->count == 2) {
-    custom_autoshift_toggle();
+    register_code (KC_PAUS);
+  }
+  else if (state->count == 3) {
+    register_code (KC_SLCK);
+  }
+  else if (state->count == 5) {
+    reset_keyboard();               // RESET
   }
   else {
-    register_code (KC_LSFT);
+    register_code (KC_PSCR);
   }
 }
 
 
-void dance_L_SHIFT_reset (qk_tap_dance_state_t *state, void *user_data) {
-  if (state->count == 3) {
-    unregister_code (KC_CAPS);
+void dance_PSCR_reset (qk_tap_dance_state_t *state, void *user_data) {
+  if (state->count == 1) {
+    unregister_code (KC_PSCR);
   }
   else if (state->count == 2) {
-    //unregister_code (KC_LSFT);
+    unregister_code (KC_PAUS);
+  }
+  else if (state->count == 3) {
+    unregister_code (KC_SLCK);
+  }
+  else if (state->count == 4) {
+    //unregister_code (KC_SLCK);
+  }
+  else if (state->count == 5) {
+
   }
   else {
-    unregister_code (KC_LSFT);
+    unregister_code (KC_PSCR);
   }
 }
-
-
 
 void led_set_kb(uint8_t usb_led) {
   // put your keyboard LED indicator (ex: Caps Lock LED) toggling code here
@@ -72,39 +138,231 @@ void led_set_kb(uint8_t usb_led) {
   led_set_user(usb_led);
 }
 
-//Tap Dance Declarations
-enum {
-  TD_L_SHIFT = 0,
-  //TD_ESC_RESET,
-  //TD_SHIFT_CAPS
+
+int cur_dance (qk_tap_dance_state_t *state) {
+  if (state->count == 1) {
+      if ((state->interrupted || !state->pressed))  return SINGLE_TAP;
+      //key has not been interrupted, but they key is still held. Means you want to send a 'HOLD'.
+      else return SINGLE_HOLD;
+
+  }
+  else if (state->count == 2) {
+    /*
+     * DOUBLE_SINGLE_TAP is to distinguish between typing "pepper", and actually wanting a double tap
+     * action when hitting 'pp'. Suggested use case for this return value is when you want to send two
+     * keystrokes of the key, and not the 'double tap' action/macro.
+    */
+    if (state->interrupted) return DOUBLE_SINGLE_TAP;
+    else if (state->pressed) return DOUBLE_HOLD;
+    else return DOUBLE_TAP;
+  }
+  //Assumes no one is trying to type the same letter three times (at least not quickly).
+  //If your tap dance key is 'KC_W', and you want to type "www." quickly - then you will need to add
+  //an exception here to return a 'TRIPLE_SINGLE_TAP', and define that enum just like 'DOUBLE_SINGLE_TAP'
+  if (state->count == 3) {
+    if (state->interrupted || !state->pressed)  return TRIPLE_TAP;
+    else return TRIPLE_HOLD;
+  }
+  else return 8; //magic number. At some point this method will expand to work for more presses
+}
+
+
+
+//instanalize an instance of 'tap' for the 'x' tap dance.
+static tap xtap_state = {
+  .is_press_action = true,
+  .state = 0
 };
+
+void super_TAB_finished (qk_tap_dance_state_t *state, void *user_data) {
+  xtap_state.state = cur_dance(state);
+  switch (xtap_state.state) {
+    case SINGLE_TAP:
+        register_code(KC_TAB);
+        break;
+    case SINGLE_HOLD:
+        SEND_STRING("  ");
+        break;
+    case DOUBLE_SINGLE_TAP:
+        register_code(KC_TAB);unregister_code(KC_TAB);register_code(KC_TAB);
+        break;
+    case DOUBLE_HOLD:
+        SEND_STRING("    ");
+        break;
+    default:
+        register_code(KC_TAB);
+        break;
+    //Last case is for fast typing. Assuming your key is `f`:
+    //For example, when typing the word `buffer`, and you want to make sure that you send `ff` and not `Esc`.
+    //In order to type `ff` when typing fast, the next character will have to be hit within the `TAPPING_TERM`, which by default is 200ms.
+  }
+}
+
+void super_TAB_reset (qk_tap_dance_state_t *state, void *user_data) {
+  switch (xtap_state.state) {
+    case SINGLE_TAP:
+        unregister_code(KC_TAB);
+        break;
+    case SINGLE_HOLD:
+        //unregister_code(KC_LCTRL);
+        break;
+    case DOUBLE_SINGLE_TAP:
+        unregister_code(KC_TAB);
+        break;
+    case DOUBLE_HOLD:
+        //unregister_code(KC_LCTL);
+        break;
+     default:
+        unregister_code(KC_TAB);
+        break;
+  }
+  xtap_state.state = 0;
+}
+
+
+void super_CAPS_finished (qk_tap_dance_state_t *state, void *user_data) {
+  xtap_state.state = cur_dance(state);
+  switch (xtap_state.state) {
+    case SINGLE_TAP:
+        set_oneshot_layer(5, ONESHOT_START);
+        break;
+    case SINGLE_HOLD:
+        layer_on(5);
+        break;
+    case DOUBLE_TAP:
+        custom_autoshift_toggle();
+        break;
+    case DOUBLE_HOLD:
+        register_code(KC_LCTL);
+        break;
+    case DOUBLE_SINGLE_TAP:
+        //register_code(KC_X); unregister_code(KC_X); register_code(KC_X);
+        break;
+    case TRIPLE_TAP:
+        register_code(KC_CAPS);
+        break;
+    //Last case is for fast typing. Assuming your key is `f`:
+    //For example, when typing the word `buffer`, and you want to make sure that you send `ff` and not `Esc`.
+    //In order to type `ff` when typing fast, the next character will have to be hit within the `TAPPING_TERM`, which by default is 200ms.
+  }
+}
+
+void super_CAPS_reset (qk_tap_dance_state_t *state, void *user_data) {
+  switch (xtap_state.state) {
+    case SINGLE_TAP:
+        clear_oneshot_layer_state(ONESHOT_PRESSED);
+        break;
+    case SINGLE_HOLD:
+        layer_off(5);
+        break;
+    case DOUBLE_TAP:
+
+        break;
+    case DOUBLE_HOLD:
+        unregister_code(KC_LCTL);
+        break;
+    case DOUBLE_SINGLE_TAP:
+        //unregister_code(KC_X);
+        break;
+    case TRIPLE_TAP:
+        unregister_code(KC_CAPS);
+        break;
+  }
+  xtap_state.state = 0;
+}
+
+void super_CTRL_finished (qk_tap_dance_state_t *state, void *user_data) {
+  xtap_state.state = cur_dance(state);
+  switch (xtap_state.state) {
+    case SINGLE_TAP:
+    case SINGLE_HOLD:
+        register_code(KC_RCTL);
+        break;
+    case DOUBLE_TAP:
+        register_code(KC_MUTE);
+        break;
+    case DOUBLE_HOLD:
+        register_code(KC_LCTL); register_code(KC_LALT);
+        break;
+    default:
+        register_code(KC_RCTL);
+        break;
+  }
+}
+
+void super_CTRL_reset (qk_tap_dance_state_t *state, void *user_data) {
+  switch (xtap_state.state) {
+    case SINGLE_TAP:
+    case SINGLE_HOLD:
+        unregister_code(KC_RCTL);
+        break;
+    case DOUBLE_TAP:
+        unregister_code(KC_MUTE);
+        break;
+    case DOUBLE_HOLD:
+        unregister_code(KC_LCTL); unregister_code(KC_LALT);
+        break;
+    default:
+        unregister_code(KC_RCTL);
+        break;
+  }
+  xtap_state.state = 0;
+}
+
 
 //Tap Dance Definitions
 qk_tap_dance_action_t tap_dance_actions[] = {
-  //[TD_SHIFT_CAPS]  = ACTION_TAP_DANCE_DOUBLE(KC_RSFT, KC_CAPS),
-  //[TD_ESC_RESET]  = ACTION_TAP_DANCE_DOUBLE(KC_LCTL, RESET),
-  [TD_L_SHIFT] = ACTION_TAP_DANCE_FN_ADVANCED (NULL, dance_L_SHIFT_finished, dance_L_SHIFT_reset)
-
+  [TD_END_HOME]     = ACTION_TAP_DANCE_DOUBLE(KC_END, KC_HOME),
+  [TD_PSCR]         = ACTION_TAP_DANCE_FN_ADVANCED (NULL, dance_PSCR_finished, dance_PSCR_reset),
+  [SUPER_TAB]       = ACTION_TAP_DANCE_FN_ADVANCED(NULL,super_TAB_finished, super_TAB_reset),
+  [SUPER_CAPS]       = ACTION_TAP_DANCE_FN_ADVANCED(NULL,super_CAPS_finished, super_CAPS_reset),
+  [SUPER_CTRL]       = ACTION_TAP_DANCE_FN_ADVANCED(NULL,super_CTRL_finished, super_CTRL_reset)
 };
 
+
+
+void keyboard_post_init_user(void) {
+  autoshift_disable();
+  rgblight_layers = my_rgb_layers;
+  rgblight_set_layer_state(0, true);
+}
+
+layer_state_t layer_state_set_user(layer_state_t state) {
+    // Both layers will light up if both kb layers are active
+    rgblight_set_layer_state(0, layer_state_cmp(state, 0)); // Normal
+    rgblight_set_layer_state(1, layer_state_cmp(state, 1)); // Plain
+    rgblight_set_layer_state(2, layer_state_cmp(state, 4)); // Fn1
+    rgblight_set_layer_state(3, layer_state_cmp(state, 5)); // Fn2
+
+    return state;
+}
+
+void oneshot_layer_changed_user(uint8_t layer) {
+  if (layer == 5) {
+    rgblight_set_layer_state(3, true); // Fn2
+  }
+  if (!layer) {
+    rgblight_set_layer_state(0, true); // Normal
+  }
+}
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
   // DEFAULT
 	[0] = LAYOUT(
-    KC_ESC,   KC_F1,    KC_F2,    KC_F3,    KC_F4,    KC_F5,    KC_F6,    KC_F7,    KC_F8,    KC_F9,    KC_F10,   KC_F11,   KC_F12,   KC_PSCR,  KC_HOME,   KC_INS,
-    KC_GRV,   KC_1,     KC_2,     KC_3,     KC_4,     KC_5,     KC_6,     KC_7,     KC_8,     KC_9,     KC_0,     KC_MINS,  KC_EQL,   _______,  BSPCDEL,    KC_PGUP,
-    KC_TAB,   KC_Q,     KC_W,     KC_E,     KC_R,     KC_T,     KC_Y,     KC_U,     KC_I,     KC_O,     KC_P,     KC_LBRC,  KC_RBRC,  KC_BSLS,              DELBSPC ,
-     MO(5) ,  KC_A,     KC_S,     KC_D,     KC_F,     KC_G,     KC_H,     KC_J,     KC_K,     KC_L,     KC_SCLN,  KC_QUOT,                      KC_ENT,      KC_PGDN,
-    TD(TD_L_SHIFT),  KC_NUBS,  KC_Z,   KC_X,     KC_C,     KC_V,     KC_B,     KC_N,     KC_M,     KC_COMM,  KC_DOT,   KC_SLSH,  RSFT_T(KC_HOME),       KC_UP,   KC_END ,
-    KC_LCTL,  KC_LGUI,  KC_LALT,                      KC_SPC,   KC_SPC,   KC_SPC,                       KC_RALT,  LT(4,KC_APP),  KC_RCTL,  KC_LEFT,  KC_DOWN,  KC_RGHT
+    KC_ESC,   KC_F1,    KC_F2,    KC_F3,    KC_F4,    KC_F5,    KC_F6,    KC_F7,    KC_F8,    KC_F9,    KC_F10,   KC_F11,   KC_F12,   TD(TD_PSCR),  KC_HOME,   KC_INS,
+    KC_GRV,   KC_1,     KC_2,     KC_3,     KC_4,     KC_5,     KC_6,     KC_7,     KC_8,     KC_9,     KC_0,     KC_MINS,  KC_EQL,   _______,  KC_BSPC,    KC_PGUP,
+    TD(SUPER_TAB),   KC_Q,     KC_W,     KC_E,     KC_R,     KC_T,     KC_Y,     KC_U,     KC_I,     KC_O,     KC_P,     KC_LBRC,  KC_RBRC,  KC_BSLS,              KC_DEL ,
+    TD(SUPER_CAPS),  KC_A,     KC_S,     KC_D,     KC_F,     KC_G,     KC_H,     KC_J,     KC_K,     KC_L,     KC_SCLN,  KC_QUOT,                      KC_ENT,      KC_PGDN,
+    LM(2, MOD_LSFT),  KC_NUBS,  KC_Z,   KC_X,     KC_C,     KC_V,     KC_B,     KC_N,     KC_M,     KC_COMM,  KC_DOT,   KC_SLSH,  RSFT_T(KC_HOME),       KC_UP,   TD(TD_END_HOME) ,
+    KC_LCTL,  KC_LGUI,  KC_LALT,                      KC_SPC,   KC_SPC,   KC_SPC,                       KC_RALT,  LT(4,KC_APP),  TD(SUPER_CTRL),  KC_LEFT,  KC_DOWN,  KC_RGHT
   ),
 
   // Functions I, activated by FN1
 	[4] = LAYOUT(
-      DF(0),    DF(1),    DF(2),  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_SLCK, KC_PAUS , KC_DEL,
+      DF(0),    TG(1),    TG(2),  TG(2),  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_SLCK, KC_PAUS , KC_DEL,
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_NLCK,  _______,  MARKUP_CODE,  _______, KC_BSPC, KC_ASUP,
-    _______,  _______,  KC_WH_U,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_VOLU,  KC_MUTE,       SWAP_BSPCDEL,
+    _______,  _______,  KC_WH_U,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_VOLU,  KC_MUTE,       _______,
     KC_CAPS,  KC_WH_L,  KC_WH_D,  KC_WH_R,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_F20,            KC_CALC,             KC_ASDN,
     AUTOSHIFT_TOGGLE,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_VOLD,  KC_ASRP,         KC_PGUP,  _______,
     _______,  _______,  _______,                  BL_STEP,  BL_STEP,  BL_STEP,                         _______,  _______,  KC_RGUI,           KC_HOME,   KC_PGDN,  KC_END
@@ -113,32 +371,32 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     // Functions II, activated by CAPS LOCK
 	[5] = LAYOUT(
       DF(0),  RGB_M_P,  RGB_M_B,  RGB_M_R,  RGB_M_SW, RGB_M_SN,  RGB_M_K,  RGB_M_X,  RGB_M_G,  RGB_M_T,  _______,  _______,   _______,       RESET, _______, KC_DEL,
-    _______,  RGB_TOG,  RGB_MOD,  RGB_HUI,  RGB_HUD,  RGB_SAI,  RGB_SAD,  RGB_VAI,  RGB_VAD,   BL_DEC,  BL_INC, _______,  MARKUP_CODE,  _______, DELBSPC,  _______,
-    _______,  _______,  KC_WH_U,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______, _______,  _______,               BSPCDEL,
+    _______,  RGB_TOG,  RGB_MOD,  RGB_HUI,  RGB_HUD,  RGB_SAI,  RGB_SAD,  RGB_VAI,  RGB_VAD,   BL_DEC,  BL_INC, _______,  MARKUP_CODE,  _______, REMOVE_LINE,  _______,
+    _______,  _______,  KC_WH_U,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______, _______,  _______,               _______,
     _______,  KC_WH_L,  KC_WH_D,  KC_WH_R,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,                  _______,   _______ ,
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______, _______,  _______,  _______,  KC_RSFT,                    KC_PGDN, _______,
     _______,  _______,  _______,                  KC_MPLY,  KC_MPLY,  KC_MPLY,                      KC_MSTP,  KC_MPRV,   KC_MNXT,             KC_HOME, KC_PGDN,KC_END
   ), // BL_TOGG,  BL_STEP,
 
-  // GAMING / PLAIN
+  // GAMING / PLAIN / Tami
 	[1] = LAYOUT(
-    _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,
+    _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  TD_PSCR,  _______,  _______,
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_BSPC, _______,
-    _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            KC_DEL,
+    KC_TAB ,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            KC_DEL,
     KC_CAPS,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,                      _______,  _______,
-    KC_LSFT,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_RSFT,            _______,  _______,
-    _______,  _______,  _______,                      _______,  _______,  _______,                      _______,  MO(4),  _______,  _______,  _______,  _______
+    KC_LSFT,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_RSFT,            _______,  KC_END,
+    _______,  _______,  _______,                      _______,  _______,  _______,                      _______,  _______,  _______,  _______,  _______,  _______
   ),
 
 
-  // Empty/Testing
+  // Shift Layer
 	[2] = LAYOUT(
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,
-    _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______, _______,
-    _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            _______,
+    _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_DEL, _______,
+    KC_TAB,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            KC_BSPC,
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,                      _______,  _______,
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            _______,  _______,
-    _______,  _______,  _______,                      _______,  _______,  _______,                      _______,    MO(4),  _______,  _______,  _______,   _______
+    _______,  _______,  _______,                      _______,  _______,  _______,                      _______,  _______,  _______,  _______,  _______,   _______
   ),
 
     // Empty/Testing
@@ -157,87 +415,21 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
-  static uint8_t saved_mods = 0; // Place this outside of the switch, but inside process_record_user()
-
   switch (keycode) {
-    case EXPERIMENT:
-      if (record->event.pressed) {
-        // when keycode QMKBEST is pressed
-        SEND_STRING("d@tenpir.at");
-      } else {
-        // when keycode QMKBEST is released
-      }
-      break;
-
-    case SHIFT_BSPCDEL:
-        if (record->event.pressed) {
-            if (get_mods() & MOD_MASK_SHIFT) {
-                saved_mods = get_mods() & MOD_MASK_SHIFT; // Mask off anything that isn't Shift
-                del_mods(saved_mods); // Remove any Shifts present
-                if (!swap_backspace_del){
-                register_code(KC_DEL);
-                } else {
-                register_code(KC_BSPC);
-                }
-            } else {
-                saved_mods = 0; // Clear saved mods so the add_mods() below doesn't add Shifts back when it shouldn't
-                if (!swap_backspace_del){
-                register_code(KC_BSPC);
-                } else {
-                register_code(KC_DEL);
-                }
-            }
-        } else {
-            add_mods(saved_mods);
-            unregister_code(KC_DEL);
-            unregister_code(KC_BSPC);
-        }
-
-    return false;
-
-
-    case BSPCDEL: // backspace becomes delete
-      if (record->event.pressed){
-        if (swap_backspace_del){
-          register_code(KC_DEL);
-        } else {
-          register_code(KC_BSPC);
-        }
-      } else {
-        unregister_code(KC_DEL);
-        unregister_code(KC_BSPC);
-      }
-      return false;
-
-    case DELBSPC: // delete becomes backspace
-      if (record->event.pressed){
-        if (swap_backspace_del){
-          register_code(KC_BSPC);
-        } else {
-
-          register_code(KC_DEL);
-        }
-      } else {
-        unregister_code(KC_DEL);
-        unregister_code(KC_BSPC);
-      }
-    return false;
-
-
-    case SWAP_BSPCDEL:
-      if (record->event.pressed) {
-          swap_backspace_del = !swap_backspace_del;
-      } else {
-        // Do something else when release
-      }
-      return false; // Skip all further processing of this key
 
     case MARKUP_CODE:
       if (record->event.pressed) {
-        // when keycode QMKBEST is pressed
         SEND_STRING("+ + + ");
       } else {
-        // when keycode QMKBEST is released
+
+      }
+      break;
+
+    case REMOVE_LINE:
+      if (record->event.pressed) {
+          register_code(KC_LSFT); tap_code(KC_HOME); unregister_code(KC_LSFT); tap_code(KC_DEL);
+      } else {
+
       }
       break;
 
@@ -245,9 +437,9 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
       if (record->event.pressed) {
         custom_autoshift_toggle();
       } else {
-        // Do something else when release
+
       }
-      return false; // Skip all further processing of this key
+      return false;
 
   }
   return true;

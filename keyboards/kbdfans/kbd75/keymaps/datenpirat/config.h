@@ -1,6 +1,6 @@
 
 #define RGBLIGHT_EFFECT_KNIGHT_LED_NUM 8
 #define RGBLIGHT_EFFECT_KNIGHT_OFFSET 8
+#define RGBLIGHT_LAYERS
 
-// datenpirat Custom
-#define TAPPING_TERM    200
+#define TAPPING_TERM    175
