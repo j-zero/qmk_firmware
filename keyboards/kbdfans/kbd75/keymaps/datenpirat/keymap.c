@@ -22,6 +22,7 @@ enum {
 enum {
   TD_END_HOME = 0,
   TD_PSCR,
+  TD_AKZENT,
   SUPER_TAB,
   SUPER_CAPS,
   SUPER_CTRL
@@ -38,12 +39,19 @@ int cur_dance (qk_tap_dance_state_t *state);
 //for the x tap dance. Put it here so it can be used in any keymap
 void x_finished (qk_tap_dance_state_t *state, void *user_data);
 void x_reset (qk_tap_dance_state_t *state, void *user_data);
+void custom_autoshift_set(bool enabled);
+void disable_caps(void);
 
 
 void matrix_init_user(void){
 
 }
 
+
+bool is_capslock_on(void){
+    led_t led_state = host_keyboard_led_state();
+    return led_state.caps_lock;
+}
 
 
 const rgblight_segment_t PROGMEM my_layer1_layer[] = RGBLIGHT_LAYER_SEGMENTS(
@@ -60,6 +68,11 @@ const rgblight_segment_t PROGMEM my_layer4_layer[] = RGBLIGHT_LAYER_SEGMENTS(
     { 0, 16, HSV_WHITE},
     { 15, 1, HSV_RED}
 );
+const rgblight_segment_t PROGMEM my_caps_layer[] = RGBLIGHT_LAYER_SEGMENTS(
+    { 0, 16, 0, 0, 0},
+    { 0, 1, HSV_RED},
+    { 15, 1, HSV_RED}
+);
 
 // etc..
 
@@ -68,23 +81,80 @@ const rgblight_segment_t* const PROGMEM my_rgb_layers[] = RGBLIGHT_LAYERS_LIST(
     my_layer1_layer,    // Overrides caps lock layer
     my_layer2_layer,     // Overrides other layers
     my_layer3_layer,     // Overrides other layers
-    my_layer4_layer     // Overrides other layers
+    my_layer4_layer,     // Overrides other layers
+    my_caps_layer
 );
 
-void custom_autoshift_toggle(void){
-      if (autoshift_enabled) {
-        autoshift_enabled = false;
-        autoshift_disable();
-        writePinHigh(B2);   // Disable CAPS LED
-        //breathing_disable();
-      }
-      else {
-        autoshift_enabled = true;
+void custom_autoshift_set(bool enabled){
+    autoshift_enabled = enabled;
+    writePin(B2, !enabled);
+    if (enabled)
         autoshift_enable();
-        writePinLow(B2); // Enable CAPS LED
-        //breathing_enable();
-      }
+    else
+        autoshift_disable();
 }
+
+void custom_autoshift_toggle(void){
+        custom_autoshift_set(!autoshift_enabled);
+}
+
+void disable_caps(){
+        if(is_capslock_on()){   // Disable CAPS LOCK when it's on
+            tap_code(KC_CAPS);
+        }
+}
+
+
+
+
+bool led_update_user(led_t led_state) {
+
+  rgblight_set_layer_state(4, led_state.caps_lock); // CAPS LAYER
+
+  if (led_state.caps_lock || autoshift_enabled) {
+    writePinLow(B2);
+
+  } else {
+    writePinHigh(B2);
+  }
+  return true;
+}
+
+
+int cur_dance (qk_tap_dance_state_t *state) {
+  if (state->count == 1) {
+      if ((state->interrupted || !state->pressed))  return SINGLE_TAP;
+      //key has not been interrupted, but they key is still held. Means you want to send a 'HOLD'.
+      else return SINGLE_HOLD;
+
+  }
+  else if (state->count == 2) {
+    /*
+     * DOUBLE_SINGLE_TAP is to distinguish between typing "pepper", and actually wanting a double tap
+     * action when hitting 'pp'. Suggested use case for this return value is when you want to send two
+     * keystrokes of the key, and not the 'double tap' action/macro.
+    */
+    if (state->interrupted) return DOUBLE_SINGLE_TAP;
+    else if (state->pressed) return DOUBLE_HOLD;
+    else return DOUBLE_TAP;
+  }
+  //Assumes no one is trying to type the same letter three times (at least not quickly).
+  //If your tap dance key is 'KC_W', and you want to type "www." quickly - then you will need to add
+  //an exception here to return a 'TRIPLE_SINGLE_TAP', and define that enum just like 'DOUBLE_SINGLE_TAP'
+  if (state->count == 3) {
+    if (state->interrupted || !state->pressed)  return TRIPLE_TAP;
+    else return TRIPLE_HOLD;
+  }
+  else return 8; //magic number. At some point this method will expand to work for more presses
+}
+
+
+
+//instanalize an instance of 'tap' for the 'x' tap dance.
+static tap xtap_state = {
+  .is_press_action = true,
+  .state = 0
+};
 
 
 void dance_PSCR_finished (qk_tap_dance_state_t *state, void *user_data) {
@@ -127,52 +197,50 @@ void dance_PSCR_reset (qk_tap_dance_state_t *state, void *user_data) {
   }
 }
 
-void led_set_kb(uint8_t usb_led) {
-  // put your keyboard LED indicator (ex: Caps Lock LED) toggling code here
-  if (IS_LED_ON(usb_led, USB_LED_CAPS_LOCK) || autoshift_enabled) {
-    writePinLow(B2);
-  } else {
-    writePinHigh(B2);
-  }
 
-  led_set_user(usb_led);
+void super_AKZENT_finished (qk_tap_dance_state_t *state, void *user_data) {
+  xtap_state.state = cur_dance(state);
+  switch (xtap_state.state) {
+    case SINGLE_TAP:
+        register_code(KC_EQL);
+        break;
+    case DOUBLE_HOLD:
+        SEND_STRING("+ + + ");
+        break;
+    case DOUBLE_TAP:
+    case DOUBLE_SINGLE_TAP:
+        tap_code(KC_EQL);register_code(KC_EQL);
+        break;
+    case TRIPLE_TAP:
+        tap_code(KC_EQL);tap_code(KC_EQL);register_code(KC_EQL);
+        break;
+    default:
+        register_code(KC_EQL);
+        break;
+  }
 }
 
-
-int cur_dance (qk_tap_dance_state_t *state) {
-  if (state->count == 1) {
-      if ((state->interrupted || !state->pressed))  return SINGLE_TAP;
-      //key has not been interrupted, but they key is still held. Means you want to send a 'HOLD'.
-      else return SINGLE_HOLD;
-
+void super_AKZENT_reset (qk_tap_dance_state_t *state, void *user_data) {
+  switch (xtap_state.state) {
+    case SINGLE_TAP:
+        unregister_code(KC_EQL);
+        break;
+    case DOUBLE_HOLD:
+        //unregister_code(KC_LCTRL);
+        break;
+    case DOUBLE_TAP:
+    case DOUBLE_SINGLE_TAP:
+        unregister_code(KC_EQL);
+        break;
+    case TRIPLE_TAP:
+        unregister_code(KC_EQL);
+        break;
+     default:
+        unregister_code(KC_EQL);
+        break;
   }
-  else if (state->count == 2) {
-    /*
-     * DOUBLE_SINGLE_TAP is to distinguish between typing "pepper", and actually wanting a double tap
-     * action when hitting 'pp'. Suggested use case for this return value is when you want to send two
-     * keystrokes of the key, and not the 'double tap' action/macro.
-    */
-    if (state->interrupted) return DOUBLE_SINGLE_TAP;
-    else if (state->pressed) return DOUBLE_HOLD;
-    else return DOUBLE_TAP;
-  }
-  //Assumes no one is trying to type the same letter three times (at least not quickly).
-  //If your tap dance key is 'KC_W', and you want to type "www." quickly - then you will need to add
-  //an exception here to return a 'TRIPLE_SINGLE_TAP', and define that enum just like 'DOUBLE_SINGLE_TAP'
-  if (state->count == 3) {
-    if (state->interrupted || !state->pressed)  return TRIPLE_TAP;
-    else return TRIPLE_HOLD;
-  }
-  else return 8; //magic number. At some point this method will expand to work for more presses
+  xtap_state.state = 0;
 }
-
-
-
-//instanalize an instance of 'tap' for the 'x' tap dance.
-static tap xtap_state = {
-  .is_press_action = true,
-  .state = 0
-};
 
 void super_TAB_finished (qk_tap_dance_state_t *state, void *user_data) {
   xtap_state.state = cur_dance(state);
@@ -192,9 +260,6 @@ void super_TAB_finished (qk_tap_dance_state_t *state, void *user_data) {
     default:
         register_code(KC_TAB);
         break;
-    //Last case is for fast typing. Assuming your key is `f`:
-    //For example, when typing the word `buffer`, and you want to make sure that you send `ff` and not `Esc`.
-    //In order to type `ff` when typing fast, the next character will have to be hit within the `TAPPING_TERM`, which by default is 200ms.
   }
 }
 
@@ -219,17 +284,35 @@ void super_TAB_reset (qk_tap_dance_state_t *state, void *user_data) {
   xtap_state.state = 0;
 }
 
+int caps_dance (qk_tap_dance_state_t *state) {
+  if (state->count == 1) {
+    if (!state->pressed) {
+      return SINGLE_TAP;
+    } else {
+      return SINGLE_HOLD;
+    }
+  } else if (state->count == 2) {
+    return DOUBLE_TAP;
+  }
+  else if (state->count == 3) {
+    return TRIPLE_TAP;
+  }
+  else return 8;
+}
+
 
 void super_CAPS_finished (qk_tap_dance_state_t *state, void *user_data) {
-  xtap_state.state = cur_dance(state);
+  xtap_state.state = caps_dance(state);
   switch (xtap_state.state) {
     case SINGLE_TAP:
-        set_oneshot_layer(5, ONESHOT_START);
-        break;
+        //set_oneshot_layer(5, ONESHOT_START);
+        //set_oneshot_mods(MOD_LSFT);
+        //break;
     case SINGLE_HOLD:
         layer_on(5);
         break;
     case DOUBLE_TAP:
+        disable_caps();
         custom_autoshift_toggle();
         break;
     case DOUBLE_HOLD:
@@ -239,6 +322,7 @@ void super_CAPS_finished (qk_tap_dance_state_t *state, void *user_data) {
         //register_code(KC_X); unregister_code(KC_X); register_code(KC_X);
         break;
     case TRIPLE_TAP:
+        custom_autoshift_set(false); // disable autoshift
         register_code(KC_CAPS);
         break;
     //Last case is for fast typing. Assuming your key is `f`:
@@ -250,8 +334,6 @@ void super_CAPS_finished (qk_tap_dance_state_t *state, void *user_data) {
 void super_CAPS_reset (qk_tap_dance_state_t *state, void *user_data) {
   switch (xtap_state.state) {
     case SINGLE_TAP:
-        clear_oneshot_layer_state(ONESHOT_PRESSED);
-        break;
     case SINGLE_HOLD:
         layer_off(5);
         break;
@@ -316,13 +398,14 @@ qk_tap_dance_action_t tap_dance_actions[] = {
   [TD_PSCR]         = ACTION_TAP_DANCE_FN_ADVANCED (NULL, dance_PSCR_finished, dance_PSCR_reset),
   [SUPER_TAB]       = ACTION_TAP_DANCE_FN_ADVANCED(NULL,super_TAB_finished, super_TAB_reset),
   [SUPER_CAPS]       = ACTION_TAP_DANCE_FN_ADVANCED(NULL,super_CAPS_finished, super_CAPS_reset),
-  [SUPER_CTRL]       = ACTION_TAP_DANCE_FN_ADVANCED(NULL,super_CTRL_finished, super_CTRL_reset)
+  [SUPER_CTRL]       = ACTION_TAP_DANCE_FN_ADVANCED(NULL,super_CTRL_finished, super_CTRL_reset),
+  [TD_AKZENT]       = ACTION_TAP_DANCE_FN_ADVANCED(NULL,super_AKZENT_finished, super_AKZENT_reset)
 };
 
 
 
 void keyboard_post_init_user(void) {
-  autoshift_disable();
+  custom_autoshift_set(false);
   rgblight_layers = my_rgb_layers;
   rgblight_set_layer_state(0, true);
 }
@@ -337,21 +420,12 @@ layer_state_t layer_state_set_user(layer_state_t state) {
     return state;
 }
 
-void oneshot_layer_changed_user(uint8_t layer) {
-  if (layer == 5) {
-    rgblight_set_layer_state(3, true); // Fn2
-  }
-  if (!layer) {
-    rgblight_set_layer_state(0, true); // Normal
-  }
-}
-
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
   // DEFAULT
 	[0] = LAYOUT(
     KC_ESC,   KC_F1,    KC_F2,    KC_F3,    KC_F4,    KC_F5,    KC_F6,    KC_F7,    KC_F8,    KC_F9,    KC_F10,   KC_F11,   KC_F12,   TD(TD_PSCR),  KC_HOME,   KC_INS,
-    KC_GRV,   KC_1,     KC_2,     KC_3,     KC_4,     KC_5,     KC_6,     KC_7,     KC_8,     KC_9,     KC_0,     KC_MINS,  KC_EQL,   _______,  KC_BSPC,    KC_PGUP,
+    KC_GRV,   KC_1,     KC_2,     KC_3,     KC_4,     KC_5,     KC_6,     KC_7,     KC_8,     KC_9,     KC_0,     KC_MINS,  TD(TD_AKZENT),   _______,  KC_BSPC,    KC_PGUP,
     TD(SUPER_TAB),   KC_Q,     KC_W,     KC_E,     KC_R,     KC_T,     KC_Y,     KC_U,     KC_I,     KC_O,     KC_P,     KC_LBRC,  KC_RBRC,  KC_BSLS,              KC_DEL ,
     TD(SUPER_CAPS),  KC_A,     KC_S,     KC_D,     KC_F,     KC_G,     KC_H,     KC_J,     KC_K,     KC_L,     KC_SCLN,  KC_QUOT,                      KC_ENT,      KC_PGDN,
     LM(2, MOD_LSFT),  KC_NUBS,  KC_Z,   KC_X,     KC_C,     KC_V,     KC_B,     KC_N,     KC_M,     KC_COMM,  KC_DOT,   KC_SLSH,  RSFT_T(KC_HOME),       KC_UP,   TD(TD_END_HOME) ,
@@ -370,7 +444,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
     // Functions II, activated by CAPS LOCK
 	[5] = LAYOUT(
-      DF(0),  RGB_M_P,  RGB_M_B,  RGB_M_R,  RGB_M_SW, RGB_M_SN,  RGB_M_K,  RGB_M_X,  RGB_M_G,  RGB_M_T,  _______,  _______,   _______,       RESET, _______, KC_DEL,
+      DF(0),  RGB_M_P,  RGB_M_B,  RGB_M_R,  RGB_M_SW, RGB_M_SN,  RGB_M_K,  RGB_M_T,  RGB_M_G,  _______,  _______,  _______,   _______,       RESET, _______, KC_DEL,
     _______,  RGB_TOG,  RGB_MOD,  RGB_HUI,  RGB_HUD,  RGB_SAI,  RGB_SAD,  RGB_VAI,  RGB_VAD,   BL_DEC,  BL_INC, _______,  MARKUP_CODE,  _______, REMOVE_LINE,  _______,
     _______,  _______,  KC_WH_U,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______, _______,  _______,               _______,
     _______,  KC_WH_L,  KC_WH_D,  KC_WH_R,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,                  _______,   _______ ,
