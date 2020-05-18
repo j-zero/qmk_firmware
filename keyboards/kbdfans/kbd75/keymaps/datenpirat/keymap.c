@@ -34,7 +34,8 @@ enum custom_keycodes {
   AUTOSHIFT_TOGGLE = SAFE_RANGE,
   MARKUP_CODE,
   REMOVE_LINE,
-  KC_UNSHIFT_DEL
+  KC_UNSHIFT_DEL,
+  KC_UNSHIFT_BSPC
 };
 
 int cur_dance (qk_tap_dance_state_t *state);
@@ -63,12 +64,12 @@ const rgblight_segment_t PROGMEM my_layer2_layer[] = RGBLIGHT_LAYER_SEGMENTS(
     { 0, 16, HSV_PINK}
 );
 const rgblight_segment_t PROGMEM my_layer3_layer[] = RGBLIGHT_LAYER_SEGMENTS(
-    { 0, 16, HSV_WHITE},
-    { 10, 1, HSV_RED}
+    { 0, 16, 0, 0, 0},
+    { 10, 1, HSV_BLUE}
 );
 const rgblight_segment_t PROGMEM my_layer4_layer[] = RGBLIGHT_LAYER_SEGMENTS(
-    { 0, 16, HSV_WHITE},
-    { 15, 1, HSV_RED}
+    { 0, 16, 0, 0, 0},
+    { 15, 1, HSV_BLUE}
 );
 const rgblight_segment_t PROGMEM my_caps_layer[] = RGBLIGHT_LAYER_SEGMENTS(
     { 0, 16, 0, 0, 0},
@@ -437,21 +438,21 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   // Functions I, activated by FN1
 	[4] = LAYOUT(
       DF(0),    TG(1),    TG(2),  TG(2),  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_SLCK, KC_PAUS , KC_DEL,
-    _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_NLCK,  _______,  MARKUP_CODE,  _______, KC_BSPC, KC_ASUP,
+    KC_WAKE,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_NLCK,  _______,  MARKUP_CODE,  _______, KC_BSPC, KC_ASUP,
     _______,  _______,  KC_WH_U,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_VOLU,  KC_MUTE,       _______,
     KC_CAPS,  KC_WH_L,  KC_WH_D,  KC_WH_R,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_F20,            KC_CALC,             KC_ASDN,
-    AUTOSHIFT_TOGGLE,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_VOLD,  KC_ASRP,         KC_PGUP,  _______,
+    AUTOSHIFT_TOGGLE,  _______,  KC_BRIU,  KC_BRID,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_VOLD,  KC_ASRP,         KC_PGUP,  _______,
     _______,  _______,  _______,                  BL_STEP,  BL_STEP,  BL_STEP,                         _______,  _______,  KC_RGUI,           KC_HOME,   KC_PGDN,  KC_END
   ),
 
     // Functions II, activated by CAPS LOCK
 	[5] = LAYOUT(
       DF(0),  RGB_M_P,  RGB_M_B,  RGB_M_R,  RGB_M_SW, RGB_M_SN,  RGB_M_K,  RGB_M_T,  RGB_M_G,  _______,  _______,  _______,   _______,       RESET, _______, KC_DEL,
-    _______,  RGB_TOG,  RGB_MOD,  RGB_HUI,  RGB_HUD,  RGB_SAI,  RGB_SAD,  RGB_VAI,  RGB_VAD,   BL_DEC,  BL_INC, _______,  MARKUP_CODE,  _______, REMOVE_LINE,  _______,
-    _______,  _______,  KC_WH_U,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______, _______,  _______,               _______,
+    KC_SLEP ,  RGB_TOG,  RGB_MOD,  RGB_HUI,  RGB_HUD,  RGB_SAI,  RGB_SAD,  RGB_VAI,  RGB_VAD,   BL_DEC,  BL_INC, _______,  MARKUP_CODE,  _______, REMOVE_LINE,  _______,
+    _______,  _______,  KC_WH_U,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______, KC_VOLU,  _______,               _______,
     _______,  KC_WH_L,  KC_WH_D,  KC_WH_R,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,                  _______,   _______ ,
-    _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______, _______,  _______,  _______,  KC_RSFT,                    KC_PGDN, _______,
-    _______,  _______,  _______,                  KC_MPLY,  KC_MPLY,  KC_MPLY,                      KC_MSTP,  KC_MPRV,   KC_MNXT,             KC_HOME, KC_PGDN,KC_END
+    _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______, _______,  _______,  KC_VOLD,  KC_RSFT,                    KC_PGDN, _______,
+    _______,  _______,  _______,                  KC_MPLY,  KC_MPLY,  KC_MPLY,                      KC_MSTP,  KC_MPRV,   KC_MNXT,             KC_WBAK, KC_PGDN,KC_WFWD
   ), // BL_TOGG,  BL_STEP,
 
   // GAMING / PLAIN / Tami
