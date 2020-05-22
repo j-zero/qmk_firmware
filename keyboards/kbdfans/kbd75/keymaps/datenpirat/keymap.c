@@ -427,10 +427,10 @@ void keyboard_post_init_user(void) {
 
 layer_state_t layer_state_set_user(layer_state_t state) {
     // Both layers will light up if both kb layers are active
-    rgblight_set_layer_state(0, layer_state_cmp(state, 0)); // Normal
-    rgblight_set_layer_state(1, layer_state_cmp(state, 1)); // Plain
-    rgblight_set_layer_state(2, layer_state_cmp(state, 4)); // Fn1
-    rgblight_set_layer_state(3, layer_state_cmp(state, 5)); // Fn2
+    rgblight_set_layer_state(0, layer_state_cmp(state, DEFAULT_LAYER)); // Normal
+    rgblight_set_layer_state(1, layer_state_cmp(state, PLAIN_LAYER)); // Plain
+    rgblight_set_layer_state(2, layer_state_cmp(state, FN_LAYER_1)); // Fn1
+    rgblight_set_layer_state(3, layer_state_cmp(state, FN_LAYER_2)); // Fn2
 
     return state;
 }
