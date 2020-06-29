@@ -50,10 +50,8 @@ enum custom_keycodes {
   FUCK_SHIFT
 };
 
-int cur_dance (qk_tap_dance_state_t *state);
+int get_dance_state (qk_tap_dance_state_t *state);
 //for the x tap dance. Put it here so it can be used in any keymap
-void x_finished (qk_tap_dance_state_t *state, void *user_data);
-void x_reset (qk_tap_dance_state_t *state, void *user_data);
 void custom_autoshift_set(bool enabled);
 void disable_caps(void);
 
@@ -136,7 +134,7 @@ bool led_update_user(led_t led_state) {
 }
 
 
-int cur_dance (qk_tap_dance_state_t *state) {
+int get_dance_state (qk_tap_dance_state_t *state) {
   if (state->count == 1) {
       if ((state->interrupted || !state->pressed))  return SINGLE_TAP;
       //key has not been interrupted, but they key is still held. Means you want to send a 'HOLD'.
@@ -164,9 +162,8 @@ int cur_dance (qk_tap_dance_state_t *state) {
 }
 
 
-
 //instanalize an instance of 'tap' for the 'x' tap dance.
-static tap xtap_state = {
+static tap tap_state = {
   .is_press_action = true,
   .state = 0
 };
@@ -214,8 +211,8 @@ void dance_PSCR_reset (qk_tap_dance_state_t *state, void *user_data) {
 
 
 void super_AKZENT_finished (qk_tap_dance_state_t *state, void *user_data) {
-  xtap_state.state = cur_dance(state);
-  switch (xtap_state.state) {
+  tap_state.state = get_dance_state(state);
+  switch (tap_state.state) {
     case SINGLE_TAP:
         register_code(KC_EQL);
         break;
@@ -236,7 +233,7 @@ void super_AKZENT_finished (qk_tap_dance_state_t *state, void *user_data) {
 }
 
 void super_AKZENT_reset (qk_tap_dance_state_t *state, void *user_data) {
-  switch (xtap_state.state) {
+  switch (tap_state.state) {
     case SINGLE_TAP:
         unregister_code(KC_EQL);
         break;
@@ -254,12 +251,12 @@ void super_AKZENT_reset (qk_tap_dance_state_t *state, void *user_data) {
         unregister_code(KC_EQL);
         break;
   }
-  xtap_state.state = 0;
+  tap_state.state = 0;
 }
 
 void super_TAB_finished (qk_tap_dance_state_t *state, void *user_data) {
-  xtap_state.state = cur_dance(state);
-  switch (xtap_state.state) {
+  tap_state.state = get_dance_state(state);
+  switch (tap_state.state) {
     case SINGLE_TAP:
         register_code(KC_TAB);
         break;
@@ -279,7 +276,7 @@ void super_TAB_finished (qk_tap_dance_state_t *state, void *user_data) {
 }
 
 void super_TAB_reset (qk_tap_dance_state_t *state, void *user_data) {
-  switch (xtap_state.state) {
+  switch (tap_state.state) {
     case SINGLE_TAP:
         unregister_code(KC_TAB);
         break;
@@ -296,29 +293,19 @@ void super_TAB_reset (qk_tap_dance_state_t *state, void *user_data) {
         unregister_code(KC_TAB);
         break;
   }
-  xtap_state.state = 0;
+  tap_state.state = 0;
 }
 
-int caps_dance (qk_tap_dance_state_t *state) {
-  if (state->count == 1) {
-    if (!state->pressed) {
-      return SINGLE_TAP;
-    } else {
-      return SINGLE_HOLD;
-    }
-  } else if (state->count == 2) {
-    return DOUBLE_TAP;
-  }
-  else if (state->count == 3) {
-    return TRIPLE_TAP;
-  }
-  else return 8;
-}
 
+void super_CAPS_start (qk_tap_dance_state_t *state, void *user_data) {
+  if (state->count == 1){
+      layer_on(FN_LAYER_2);
+  }
+}
 
 void super_CAPS_finished (qk_tap_dance_state_t *state, void *user_data) {
-  xtap_state.state = caps_dance(state);
-  switch (xtap_state.state) {
+  tap_state.state = get_dance_state(state);
+  switch (tap_state.state) {
     case SINGLE_TAP:
         //set_oneshot_layer(5, ONESHOT_START);
         //set_oneshot_mods(MOD_LSFT);
@@ -347,7 +334,7 @@ void super_CAPS_finished (qk_tap_dance_state_t *state, void *user_data) {
 }
 
 void super_CAPS_reset (qk_tap_dance_state_t *state, void *user_data) {
-  switch (xtap_state.state) {
+  switch (tap_state.state) {
     case SINGLE_TAP:
     case SINGLE_HOLD:
         layer_off(FN_LAYER_2);
@@ -365,12 +352,13 @@ void super_CAPS_reset (qk_tap_dance_state_t *state, void *user_data) {
         unregister_code(KC_CAPS);
         break;
   }
-  xtap_state.state = 0;
+  layer_off(FN_LAYER_2);
+  tap_state.state = 0;
 }
 
 void super_CTRL_finished (qk_tap_dance_state_t *state, void *user_data) {
-  xtap_state.state = cur_dance(state);
-  switch (xtap_state.state) {
+  tap_state.state = get_dance_state(state);
+  switch (tap_state.state) {
     case SINGLE_TAP:
     case SINGLE_HOLD:
         register_code(KC_RCTL);
@@ -388,7 +376,7 @@ void super_CTRL_finished (qk_tap_dance_state_t *state, void *user_data) {
 }
 
 void super_CTRL_reset (qk_tap_dance_state_t *state, void *user_data) {
-  switch (xtap_state.state) {
+  switch (tap_state.state) {
     case SINGLE_TAP:
     case SINGLE_HOLD:
         unregister_code(KC_RCTL);
@@ -403,7 +391,7 @@ void super_CTRL_reset (qk_tap_dance_state_t *state, void *user_data) {
         unregister_code(KC_RCTL);
         break;
   }
-  xtap_state.state = 0;
+  tap_state.state = 0;
 }
 
 
@@ -412,7 +400,7 @@ qk_tap_dance_action_t tap_dance_actions[] = {
   [TD_END_HOME]     = ACTION_TAP_DANCE_DOUBLE(KC_END, KC_HOME),
   [TD_PSCR]         = ACTION_TAP_DANCE_FN_ADVANCED (NULL, dance_PSCR_finished, dance_PSCR_reset),
   [SUPER_TAB]       = ACTION_TAP_DANCE_FN_ADVANCED(NULL,super_TAB_finished, super_TAB_reset),
-  [SUPER_CAPS]       = ACTION_TAP_DANCE_FN_ADVANCED(NULL,super_CAPS_finished, super_CAPS_reset),
+  [SUPER_CAPS]       = ACTION_TAP_DANCE_FN_ADVANCED(super_CAPS_start ,super_CAPS_finished, super_CAPS_reset),
   [SUPER_CTRL]       = ACTION_TAP_DANCE_FN_ADVANCED(NULL,super_CTRL_finished, super_CTRL_reset),
   [TD_AKZENT]       = ACTION_TAP_DANCE_FN_ADVANCED(NULL,super_AKZENT_finished, super_AKZENT_reset)
 };
@@ -490,11 +478,11 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   // Functions I, activated by FN1
 	[FN_LAYER_1] = LAYOUT(
       DF(DEFAULT_LAYER ),  TG(PLAIN_LAYER ), TG(FUNKY_LAYER  ), _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_SLCK, KC_PAUS , KC_DEL,
-    KC_WAKE,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_NLCK,  _______,  MARKUP_CODE,  _______, KC_BSPC, KC_ASUP,
+    KC_WAKE,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_NLCK,  _______,  MARKUP_CODE,  _______, REMOVE_LINE, KC_ASUP,
     _______,  _______,  KC_WH_U,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_VOLU,  KC_MUTE,       _______,
     KC_CAPS,  KC_WH_L,  KC_WH_D,  KC_WH_R,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_F20,            KC_CALC,             KC_ASDN,
     _______,  _______,  KC_BRIU,  KC_BRID,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_VOLD,  KC_ASRP,         KC_PGUP,  _______,
-    _______,  _______,  _______,                  BL_STEP,  BL_STEP,  BL_STEP,                         _______,  _______,  KC_RGUI,           KC_HOME,   KC_PGDN,  KC_END
+    RESET  ,  _______,  _______,                  BL_STEP,  BL_STEP,  BL_STEP,                         _______,  _______,  KC_RGUI,           KC_HOME,   KC_PGDN,  KC_END
   ),
 
     // Functions II, activated by CAPS LOCK
