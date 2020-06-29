@@ -249,47 +249,6 @@ void super_AKZENT_reset (qk_tap_dance_state_t *state, void *user_data) {
   tap_state.state = 0;
 }
 
-void super_TAB_finished (qk_tap_dance_state_t *state, void *user_data) {
-  tap_state.state = get_dance_state(state);
-  switch (tap_state.state) {
-    case SINGLE_TAP:
-        register_code(KC_TAB);
-        break;
-    case SINGLE_HOLD:
-        SEND_STRING("  ");
-        break;
-    case DOUBLE_SINGLE_TAP:
-        register_code(KC_TAB);unregister_code(KC_TAB);register_code(KC_TAB);
-        break;
-    case DOUBLE_HOLD:
-        SEND_STRING("    ");
-        break;
-    default:
-        register_code(KC_TAB);
-        break;
-  }
-}
-
-void super_TAB_reset (qk_tap_dance_state_t *state, void *user_data) {
-  switch (tap_state.state) {
-    case SINGLE_TAP:
-        unregister_code(KC_TAB);
-        break;
-    case SINGLE_HOLD:
-        //unregister_code(KC_LCTRL);
-        break;
-    case DOUBLE_SINGLE_TAP:
-        unregister_code(KC_TAB);
-        break;
-    case DOUBLE_HOLD:
-        //unregister_code(KC_LCTL);
-        break;
-     default:
-        unregister_code(KC_TAB);
-        break;
-  }
-  tap_state.state = 0;
-}
 
 
 void super_CAPS_start (qk_tap_dance_state_t *state, void *user_data) {
@@ -303,7 +262,8 @@ void super_CAPS_finished (qk_tap_dance_state_t *state, void *user_data) {
 
   switch (tap_state.state) {
     case SINGLE_TAP:
-        //set_oneshot_layer(FN_LAYER_2, ONESHOT_START); clear_oneshot_layer_state(ONESHOT_PRESSED); break;
+        register_code(KC_HOME);
+        break;
     case SINGLE_HOLD:
         layer_on(FN_LAYER_2);
         break;
@@ -331,6 +291,7 @@ void super_CAPS_reset (qk_tap_dance_state_t *state, void *user_data) {
 
   switch (tap_state.state) {
     case SINGLE_TAP:
+        unregister_code(KC_HOME);
         break;
     case SINGLE_HOLD:
         break;
@@ -396,7 +357,6 @@ void super_CTRL_reset (qk_tap_dance_state_t *state, void *user_data) {
 //Tap Dance Definitions
 qk_tap_dance_action_t tap_dance_actions[] = {
   [TD_PSCR]         = ACTION_TAP_DANCE_FN_ADVANCED (NULL, dance_PSCR_finished, dance_PSCR_reset),
-  [SUPER_TAB]       = ACTION_TAP_DANCE_FN_ADVANCED(NULL,super_TAB_finished, super_TAB_reset),
   [SUPER_CAPS]       = ACTION_TAP_DANCE_FN_ADVANCED(super_CAPS_start ,super_CAPS_finished, super_CAPS_reset),
   [SUPER_CTRL]       = ACTION_TAP_DANCE_FN_ADVANCED(NULL,super_CTRL_finished, super_CTRL_reset),
   [TD_AKZENT]       = ACTION_TAP_DANCE_FN_ADVANCED(NULL,super_AKZENT_finished, super_AKZENT_reset)
@@ -432,7 +392,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     KC_LCTL,  KC_LGUI,  KC_LALT,                      KC_SPC,   KC_SPC,   KC_SPC,                       KC_RALT,  LT(FN_LAYER_1 ,KC_APP),  TD(SUPER_CTRL),  KC_LEFT,  KC_DOWN,  KC_RGHT
   ),
 
-  // GAMING / PLAIN / Tami
+  // GAMING / PLAIN
 	[PLAIN_LAYER] = LAYOUT(
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  TD_PSCR,  _______,  _______,
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_BSPC, _______,
@@ -447,28 +407,17 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 	[SHIFT_LAYER] = LAYOUT(
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_UNSHIFT_DEL, _______,
-    _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            KC_UNSHIFT_BSPC,
-    _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,                      _______,  _______,
-    _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            _______,  _______,
-    _______,  _______,  _______,                      _______,  _______,  _______,                      _______,  _______,  _______,  _______,  _______,   _______
-   ),
-
-  // Control Layer
-	[CTRL_LAYER] = LAYOUT(
-    _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,
-    _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______, _______,
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            _______,
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,                      _______,  _______,
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            _______,  _______,
     _______,  _______,  _______,                      _______,  _______,  _______,                      _______,  _______,  _______,  _______,  _______,   _______
    ),
 
-
     // Funky Layer
 	[FUNKY_LAYER] = LAYOUT(
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______, _______,
-    TD(SUPER_TAB),  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,      _______,
+    _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,      _______,
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,                      _______,  _______,
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            _______,  _______,
     _______,  _______,  _______,                      _______,  _______,  _______,                      _______,  _______,  _______,  _______,  _______,   _______
@@ -521,7 +470,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
     case REMOVE_LINE:
       if (record->event.pressed) {
-          register_code(KC_LSFT); tap_code(KC_HOME); unregister_code(KC_LSFT); tap_code(KC_DEL);
+          tap_code(KC_END); register_code(KC_LSFT); tap_code(KC_HOME); unregister_code(KC_LSFT); tap_code(KC_DEL);
       } else {
 
       }
