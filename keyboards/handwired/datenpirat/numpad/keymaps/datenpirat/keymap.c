@@ -1,6 +1,6 @@
 #include QMK_KEYBOARD_H
 
-
+#include "raw_hid.h"
 
 enum {
   DEFAULT_LAYER = 0,
@@ -13,7 +13,7 @@ enum {
 
 enum custom_keycodes {
   DP_CALC = SAFE_RANGE,
-  DP_ALTF4
+  DP_CLOSECALC
 };
 
 typedef struct {
@@ -30,6 +30,10 @@ enum {
   TRIPLE_TAP = 6,
   TRIPLE_HOLD = 7
 };
+
+int LED_RED = 1;
+int LED_GREEN = 0;
+int LED_OFF = 0;
 
 int get_dance_state (qk_tap_dance_state_t *state) {
   if (state->count == 1) {
@@ -268,18 +272,6 @@ void keyboard_post_init_user(void) {
     writePin(B5, false);
 }
 
-/*
-bool led_update_user(led_t led_state) {
-
-    writePinLow(B4);
-    writePinLow(B5);
-
-    writePin(B4, led_state.num_lock);
-    writePin(B5, !led_state.num_lock);
-
-    return true;
-}
-*/
 
 layer_state_t layer_state_set_user(layer_state_t state) {
     // Both layers will light up if both kb layers are active
@@ -293,14 +285,34 @@ layer_state_t layer_state_set_user(layer_state_t state) {
     writePinLow(B4);
     writePinLow(B5);
 
-    writePin(B4, !layer_state_cmp(state, PLAIN_LAYER));
-    writePin(B5, layer_state_cmp(state, PLAIN_LAYER));
+    LED_RED = !layer_state_cmp(state, CALC_LAYER);
+    LED_GREEN = layer_state_cmp(state, CALC_LAYER);
+
+    if(!LED_OFF){
+        writePin(B4, LED_RED);
+        writePin(B5, LED_GREEN);
+    }
     return state;
 }
 
 bool led_update_user(led_t led_state) {
+    writePinLow(B4);
+    writePinLow(B5);
+    //rgblight_set_layer_state(1, !led_state.num_lock);
 
-    rgblight_set_layer_state(1, !led_state.num_lock);
+    if(!led_state.num_lock){
+        writePinLow(B4);
+        writePinLow(B5);
+        LED_OFF = 1;
+    }
+    else{
+        writePin(B4, LED_RED);
+        writePin(B5, LED_GREEN);
+        LED_OFF = 0;
+    }
+
+
+
 
     return true;
 }
@@ -316,6 +328,13 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             unregister_code(KC_CALC);
         }
 
+    case DP_CLOSECALC:
+        if (record->event.pressed) {
+            layer_invert(CALC_LAYER);
+            register_code(KC_LALT); tap_code(KC_F4);
+        } else {
+            unregister_code(KC_LALT);
+        }
 
         return false;
   }
@@ -345,7 +364,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   ),
 
   [FN_LAYER] = LAYOUT_numpad_5x4(
-    _______,  KC_PSLS,   KC_PAST,  KC_PMNS,
+     KC_F19,  KC_PSLS,   KC_PAST,  KC_PMNS,
     _______,  _______,   _______,
     _______,  _______,   _______,  KC_PPLS,
     _______,  _______,   _______,
@@ -358,15 +377,15 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     _______,  _______,   _______,
     _______,  _______,   _______, KC_PPLS,
     _______,     _______,      _______,
-    LT(CALC_FN_LAYER, KC_P0),  KC_BSPC,  _______
+    LT(CALC_FN_LAYER, KC_P0),  KC_PDOT,  _______
   ),
 
     [CALC_FN_LAYER] = LAYOUT_numpad_5x4(
-    _______,  LSFT(KC_5),   KC_ESC,      _______,
+    LALT(KC_2),  LSFT(KC_5),   KC_ESC,      KC_F6,
     TD(TD_KC7), TD(TD_KC8), TD(TD_KC9),
-    TD(TD_KC4), TD(TD_KC5), TD(TD_KC6),  _______,
+    TD(TD_KC4), TD(TD_KC5), TD(TD_KC6),  KC_F5,
     TD(TD_KC1), TD(TD_KC2), TD(TD_KC3),
-    _______,             KC_BSPC,        _______
+    _______,             KC_BSPC,        LALT(KC_4)
   ),
 
   [CONF_LAYER] = LAYOUT_numpad_5x4(
@@ -377,3 +396,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     KC_NO,     KC_PDOT,           DP_CALC
   )
 };
+
+
+void raw_hid_receive(uint8_t *data, uint8_t length) {
+    raw_hid_send(data, length);
+}
