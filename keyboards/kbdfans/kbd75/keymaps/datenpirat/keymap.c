@@ -142,8 +142,7 @@ bool led_update_user(led_t led_state) {
 
   rgblight_set_layer_state(4, led_state.caps_lock); // CAPS LAYER
 
-
-  if (led_state.caps_lock || autoshift_enabled || one_shot_shift_enabled) {
+  if (led_state.caps_lock || autoshift_enabled) {
     writePinLow(B2);
 
   } else {
@@ -434,6 +433,7 @@ qk_tap_dance_action_t tap_dance_actions[] = {
 
 void keyboard_post_init_user(void) {
   custom_autoshift_set(false);
+  custom_oneshot_shift_set(false);
   rgblight_layers = my_rgb_layers;
   rgblight_set_layer_state(0, true);
 }
@@ -577,7 +577,3 @@ void post_process_record_user(uint16_t keycode, keyrecord_t *record){
 
 }
 
-void raw_hid_receive(uint8_t *data, uint8_t length) {
-    //raw_hid_send(data, length);
-    tap_code(data[0]);
-}
