@@ -41,7 +41,6 @@ enum custom_keycodes {
   MARKUP_CODE,
   REMOVE_LINE,
   KC_UNSHIFT_DEL,
-  KC_UNSHIFT_BSPC,
   FUCK_SHIFT,
   DOUBLE_SPACE
 };
@@ -407,6 +406,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
 
   // Shift Layer
+
 	[SHIFT_LAYER] = LAYOUT(
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  XXXXXXX,  KC_UNSHIFT_DEL, _______,
@@ -435,13 +435,13 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,            XXXXXXX,  XXXXXXX,
     XXXXXXX,  XXXXXXX,  XXXXXXX,                      XXXXXXX,  XXXXXXX,  XXXXXXX,                      XXXXXXX,  MO(FN_LAYER_1),  XXXXXXX,  XXXXXXX,  XXXXXXX,   XXXXXXX
   ),
-  // Functions I, activated by FN1
+  // Functions I, activated by GUI
 	[FN_LAYER_1] = LAYOUT(
     DF(DEFAULT_LAYER), TG(PLAIN_LAYER), TG(FUNKY_LAYER), _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_SLCK, KC_PAUS , KC_DEL,
     KC_WAKE,  RGB_M_P, RGB_M_B,  RGB_M_R,  RGB_M_SW, RGB_M_SN,  RGB_M_K,  RGB_M_T,  RGB_M_G,  _______,  KC_NLCK,  _______,  MARKUP_CODE,  XXXXXXX, REMOVE_LINE, KC_ASUP,
     _______,  RGB_TOG,  RGB_MOD,  RGB_HUI,  RGB_HUD,  RGB_SAI,  RGB_SAD,  RGB_VAI,  RGB_VAD,  _______,  _______,  _______,  KC_VOLU,  KC_MUTE,       _______,
     KC_CAPS,  BL_DEC,  BL_INC,  _______,  _______,  _______,  _______,  _______,  _______,  TG(DISABLED_LAYER),  _______,  KC_F20,            KC_CALC,             KC_ASDN,
-    _______,  _______,  KC_BRIU,  KC_BRID,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_VOLD,  KC_ASRP,                   KC_PGUP,  _______,
+    KC_LSFT,  _______,  KC_BRIU,  KC_BRID,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_VOLD,  KC_ASRP,                   KC_PGUP,  _______,
     RESET  ,  DEBUG,  _______,                  BL_STEP,  BL_STEP,  BL_STEP,                         _______,  _______,  KC_RGUI,           KC_HOME,   KC_PGDN,  KC_END
   ),
 
@@ -471,14 +471,6 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
       }
       break;
 
-     case DOUBLE_SPACE:
-      if (record->event.pressed) {
-        SEND_STRING("  ");
-      } else {
-
-      }
-      break;
-
     case REMOVE_LINE:
       if (record->event.pressed) {
           tap_code(KC_END); register_code(KC_LSFT); tap_code(KC_HOME); unregister_code(KC_LSFT); tap_code(KC_DEL);
@@ -487,22 +479,20 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
       }
       break;
 
-
+    // Shift + Backspace = Del
     case KC_UNSHIFT_DEL:
-      if (record->event.pressed) {
-          unregister_code(KC_LSFT); tap_code(KC_DEL); register_code(KC_LSFT);
-      } else {
+      	if (record->event.pressed && get_mods() & (MOD_BIT(KC_LSHIFT))) {
+			unregister_code(KC_LSFT);
+			register_code(KC_DEL);
+			return false;
+			}
+		else if (!record->event.pressed) {
+			unregister_code(KC_DEL);
+            register_code(KC_LSFT);
+			}
+		break;
 
-      }
-      break;
 
-    case KC_UNSHIFT_BSPC:
-      if (record->event.pressed) {
-          unregister_code(KC_LSFT); tap_code(KC_BSPC); register_code(KC_LSFT);
-      } else {
-
-      }
-      break;
   }
 
   return true;
