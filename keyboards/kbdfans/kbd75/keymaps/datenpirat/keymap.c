@@ -269,7 +269,6 @@ void super_SHIFT_finished (qk_tap_dance_state_t *state, void *user_data) {
   switch (tap_state.state) {
     case SINGLE_TAP:
 
-        //del_mods(MOD_BIT(KC_LSHIFT));
         if(one_shot_shift_enabled){
             if(!one_shot_shift_on){
                 set_oneshot_mods(MOD_LSFT);
@@ -278,23 +277,11 @@ void super_SHIFT_finished (qk_tap_dance_state_t *state, void *user_data) {
                 clear_oneshot_mods();
             }
         }
-        //if(!(get_mods() & (MOD_BIT(KC_LSFT))))
-        //
-        //else
-        //    clear_oneshot_mods();
-        //register_code(KC_HOME);
+
 
        break;
-    case SINGLE_HOLD:
-        //layer_on(SHIFT_LAYER);
-        if(one_shot_shift_enabled)
-            clear_oneshot_mods();
-        //set_mods(MOD_BIT(KC_LSFT));
-        //register_code(KC_LSFT);
-        break;
+
     default:
-        //set_mods(MOD_BIT(KC_LSFT));
-        //register_code(KC_LSFT);
         if(one_shot_shift_enabled)
             clear_oneshot_mods();
         break;
@@ -304,11 +291,6 @@ void super_SHIFT_finished (qk_tap_dance_state_t *state, void *user_data) {
 void super_SHIFT_reset (qk_tap_dance_state_t *state, void *user_data) {
 
   switch (tap_state.state) {
-    case SINGLE_TAP:
-        unregister_code(KC_LSFT);
-    case SINGLE_HOLD:
-        unregister_code(KC_LSFT);
-        break;
     default:
         unregister_code(KC_LSFT);
         break;
@@ -409,7 +391,7 @@ void super_CTRL_finished (qk_tap_dance_state_t *state, void *user_data) {
         register_code(KC_RCTL);
         break;
     case DOUBLE_TAP:
-        register_code(KC_MPLY);
+        register_code(KC_RGUI);
         break;
     case DOUBLE_HOLD:
         register_code(KC_LCTL); register_code(KC_LALT);
@@ -427,7 +409,7 @@ void super_CTRL_reset (qk_tap_dance_state_t *state, void *user_data) {
         unregister_code(KC_RCTL);
         break;
     case DOUBLE_TAP:
-        unregister_code(KC_MPLY);
+        unregister_code(KC_RGUI);
         break;
     case DOUBLE_HOLD:
         unregister_code(KC_LCTL); unregister_code(KC_LALT);
