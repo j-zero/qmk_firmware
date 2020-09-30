@@ -546,6 +546,36 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
       }
       break;
 
+    case DP_RSFT:
+      if (record->event.pressed) {
+          // PRESSED
+        if(one_shot_shift_enabled){
+            if(!one_shot_shift_on){
+                set_oneshot_mods(MOD_RSFT);
+            }
+            else{
+                clear_oneshot_mods();
+            }
+        }
+        else{
+
+        }
+      } else {
+          // RELEASED
+        if(one_shot_shift_enabled){
+            if(one_shot_shift_on){
+                //set_oneshot_mods(MOD_RSFT);
+                tap_code(KC_HOME);
+                clear_oneshot_mods();
+            }
+            else{
+                clear_oneshot_mods();
+            }
+        }
+      }
+      return false;
+      break;
+
     case REMOVE_LINE:
       if (record->event.pressed) {
           tap_code(KC_END); register_code(KC_LSFT); tap_code(KC_HOME); unregister_code(KC_LSFT); tap_code(KC_DEL);
