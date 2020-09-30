@@ -558,19 +558,23 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             }
         }
         else{
-
+            register_code(KC_RSFT);
         }
       } else {
           // RELEASED
         if(one_shot_shift_enabled){
+
             if(one_shot_shift_on){
                 //set_oneshot_mods(MOD_RSFT);
-                tap_code(KC_HOME);
                 clear_oneshot_mods();
+                tap_code(KC_HOME);
             }
             else{
                 clear_oneshot_mods();
             }
+
+        }else{
+            unregister_code(KC_RSFT);
         }
       }
       return false;
