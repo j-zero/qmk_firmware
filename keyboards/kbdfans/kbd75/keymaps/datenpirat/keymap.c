@@ -4,6 +4,7 @@ bool autoshift_enabled = false;
 bool one_shot_shift_enabled = false;
 bool one_shot_shift_on = false;
 
+
 typedef struct {
   bool is_press_action;
   int state;
@@ -37,6 +38,7 @@ enum {
   SUPER_CAPS,
   SUPER_SHIFT,
   SUPER_CTRL,
+  SUPER_PSCR,
 };
 enum custom_keycodes {
   AUTOSHIFT_TOGGLE = SAFE_RANGE,
@@ -44,7 +46,8 @@ enum custom_keycodes {
   REMOVE_LINE,
   KC_UNSHIFT_DEL,
   DOUBLE_SPACE,
-  TG_OSSFT
+  TG_OSSFT,
+  DP_RSFT
 };
 
 int get_dance_state (qk_tap_dance_state_t *state);
@@ -420,13 +423,55 @@ void super_CTRL_reset (qk_tap_dance_state_t *state, void *user_data) {
   tap_state.state = 0;
 }
 
+/*
+void super_PSCR_start (qk_tap_dance_state_t *state, void *user_data) {
+  if (state->count == 1){
+      register_code(KC_LSFT);
+      layer_on(SHIFT_LAYER);
+  }
+}
+*/
+
+void super_PSCR_finished (qk_tap_dance_state_t *state, void *user_data) {
+  tap_state.state = get_dance_state(state);
+  switch (tap_state.state) {
+    case SINGLE_TAP:
+    case SINGLE_HOLD:
+        register_code(KC_PSCR);
+        break;
+    case DOUBLE_TAP:
+        register_code(KC_LGUI); tap_code(KC_L); tap_code(KC_MSTP);
+        break;
+    default:
+        register_code(KC_PSCR);
+        break;
+  }
+}
+
+void super_PSCR_reset (qk_tap_dance_state_t *state, void *user_data) {
+  switch (tap_state.state) {
+    case SINGLE_TAP:
+    case SINGLE_HOLD:
+        unregister_code(KC_PSCR);
+        break;
+    case DOUBLE_TAP:
+        unregister_code(KC_LGUI);
+        break;
+    default:
+        unregister_code(KC_RCTL);
+        break;
+  }
+  tap_state.state = 0;
+}
 
 //Tap Dance Definitions
 qk_tap_dance_action_t tap_dance_actions[] = {
   [SUPER_SHIFT]       = ACTION_TAP_DANCE_FN_ADVANCED(super_SHIFT_start ,super_SHIFT_finished, super_SHIFT_reset),
   [SUPER_CAPS]       = ACTION_TAP_DANCE_FN_ADVANCED(super_CAPS_start ,super_CAPS_finished, super_CAPS_reset),
   [SUPER_CTRL]       = ACTION_TAP_DANCE_FN_ADVANCED(NULL,super_CTRL_finished, super_CTRL_reset),
-  [TD_AKZENT]       = ACTION_TAP_DANCE_FN_ADVANCED(NULL,super_AKZENT_finished, super_AKZENT_reset)
+  [TD_AKZENT]       = ACTION_TAP_DANCE_FN_ADVANCED(NULL,super_AKZENT_finished, super_AKZENT_reset),
+  [SUPER_PSCR]       = ACTION_TAP_DANCE_FN_ADVANCED(NULL,super_PSCR_finished, super_PSCR_reset)
+
 };
 
 
@@ -452,20 +497,21 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     // LM(SHIFT_LAYER , MOD_LSFT)
   // DEFAULT
 	[DEFAULT_LAYER] = LAYOUT(
-    KC_ESC,   KC_F1,    KC_F2,    KC_F3,    KC_F4,    KC_F5,    KC_F6,    KC_F7,    KC_F8,    KC_F9,    KC_F10,   KC_F11,   KC_F12,   KC_PSCR,  KC_HOME,   KC_INS,
+    KC_ESC,   KC_F1,    KC_F2,    KC_F3,    KC_F4,    KC_F5,    KC_F6,    KC_F7,    KC_F8,    KC_F9,    KC_F10,   KC_F11,   KC_F12,   TD(SUPER_PSCR),  KC_HOME,   KC_INS,
     KC_GRV,   KC_1,     KC_2,     KC_3,     KC_4,     KC_5,     KC_6,     KC_7,     KC_8,     KC_9,     KC_0,     KC_MINS,  TD(TD_AKZENT),   XXXXXXX,  KC_BSPC,    KC_PGUP,
-    KC_TAB,   KC_Q,     KC_W,     KC_E,     KC_R,     KC_T,     KC_Y,     KC_U,     KC_I,     KC_O,     KC_P,     KC_LBRC,  KC_RBRC,  KC_BSLS,              KC_DEL ,
-    TD(SUPER_CAPS),  KC_A,     KC_S,     KC_D,     KC_F,     KC_G,     KC_H,     KC_J,     KC_K,     KC_L,     KC_SCLN,  KC_QUOT,                      KC_ENT,      KC_PGDN,
+    KC_TAB,   KC_Q,     KC_W,     KC_E,     KC_R,     KC_T,     KC_Y,     KC_U,     KC_I,     KC_O,     KC_P,     KC_LBRC,  KC_RBRC,  KC_BSLS,              KC_PGDN ,
+    TD(SUPER_CAPS),  KC_A,     KC_S,     KC_D,     KC_F,     KC_G,     KC_H,     KC_J,     KC_K,     KC_L,     KC_SCLN,  KC_QUOT,                      KC_ENT,      KC_DEL,
     TD(SUPER_SHIFT),  KC_NUBS,  KC_Z,   KC_X,     KC_C,     KC_V,     KC_B,     KC_N,     KC_M,     KC_COMM,  KC_DOT,   KC_SLSH,  RSFT_T(KC_HOME),       KC_UP,   KC_END ,
     KC_LCTL,  KC_LGUI,  KC_LALT,                      KC_SPC,   KC_SPC,   KC_SPC,                       KC_RALT,  LT(FN_LAYER_1 ,KC_APP),  TD(SUPER_CTRL),  KC_LEFT,  KC_DOWN,  KC_RGHT
   ),
-
+ // KC_DEL
+ //
   // GAMING / PLAIN
 	[PLAIN_LAYER] = LAYOUT(
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_PSCR,  _______,  _______,
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  XXXXXXX,  KC_BSPC, _______,
-    _______ ,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            KC_DEL,
-    KC_CAPS,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,                      _______,  _______,
+    _______ ,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            _______,
+    KC_CAPS,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,                      _______,  KC_DEL,
     KC_LSFT,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_RSFT,            _______,  _______,
     _______,  _______,  _______,                      _______,  _______,  _______,                      _______,  _______,  _______,  _______,  _______,  _______
   ),
@@ -505,8 +551,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 	[FN_LAYER_1] = LAYOUT(
     DF(DEFAULT_LAYER), TG(PLAIN_LAYER), TG(FUNKY_LAYER), _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_SLCK, KC_PAUS , KC_DEL,
     KC_WAKE,  RGB_M_P, RGB_M_B,  RGB_M_R,  RGB_M_SW, RGB_M_SN,  RGB_M_K,  RGB_M_T,  RGB_M_G,  _______,  KC_NLCK,  _______,  MARKUP_CODE,  XXXXXXX, REMOVE_LINE, KC_ASUP,
-    _______,  RGB_TOG,  RGB_MOD,  RGB_HUI,  RGB_HUD,  RGB_SAI,  RGB_SAD,  RGB_VAI,  RGB_VAD,  _______,  _______,  _______,  KC_VOLU,  KC_MUTE,       _______,
-    KC_CAPS,  BL_DEC,  BL_INC,  _______,  _______,  _______,  _______,  _______,  _______,  TG(DISABLED_LAYER),  _______,  KC_F20,            KC_CALC,             KC_ASDN,
+    _______,  RGB_TOG,  RGB_MOD,  RGB_HUI,  RGB_HUD,  RGB_SAI,  RGB_SAD,  RGB_VAI,  RGB_VAD,  _______,  _______,  _______,  KC_VOLU,  KC_MUTE,       KC_ASDN,
+    KC_CAPS,  BL_DEC,  BL_INC,  _______,  _______,  _______,  _______,  _______,  _______,  TG(DISABLED_LAYER),  _______,  KC_F20,            KC_CALC,             _______,
     KC_LSFT,  _______,  KC_BRIU,  KC_BRID,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_VOLD,  KC_ASRP,                   KC_PGUP,  _______,
     RESET  ,  DEBUG,  _______,                  BL_STEP,  BL_STEP,  BL_STEP,                         _______,  _______,  KC_RGUI,           KC_HOME,   KC_PGDN,  KC_END
   ),
@@ -515,10 +561,10 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 	[FN_LAYER_2] = LAYOUT(
     DF(DEFAULT_LAYER),  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,
     KC_SLEP ,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,   _______,  _______, _______,  MARKUP_CODE,  XXXXXXX, REMOVE_LINE,  KC_VOLU,
-    _______,  _______,  KC_WH_U,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______, KC_VOLU,  _______,                    _______,
-    _______,  KC_WH_L,  KC_WH_D,  KC_WH_R,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,                  _______,             KC_VOLD ,
+    _______,  _______,  KC_WH_U,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______, KC_VOLU,  _______,                    KC_VOLD,
+    _______,  KC_WH_L,  KC_WH_D,  KC_WH_R,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,                  _______,             _______ ,
     TG_OSSFT,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______, _______,  _______,  KC_VOLD,  _______,                    KC_MS_UP, _______,
-    _______,  _______,  _______,                  KC_MPLY,  KC_MPLY,  KC_MPLY,                      _______,  _______,   _______,             KC_MPRV, KC_MS_DOWN,KC_MNXT
+    _______,  _______,  _______,                  KC_MPLY,  KC_MPLY,  KC_MPLY,                      _______,  _______,   KC_MSTP,             KC_MPRV, KC_MS_DOWN,KC_MNXT
   ),
 
 };
@@ -526,6 +572,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+
 
   switch (keycode) {
 
@@ -544,40 +591,6 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
       } else {
 
       }
-      break;
-
-    case DP_RSFT:
-      if (record->event.pressed) {
-          // PRESSED
-        if(one_shot_shift_enabled){
-            if(!one_shot_shift_on){
-                set_oneshot_mods(MOD_RSFT);
-            }
-            else{
-                clear_oneshot_mods();
-            }
-        }
-        else{
-            register_code(KC_RSFT);
-        }
-      } else {
-          // RELEASED
-        if(one_shot_shift_enabled){
-
-            if(one_shot_shift_on){
-                //set_oneshot_mods(MOD_RSFT);
-                clear_oneshot_mods();
-                tap_code(KC_HOME);
-            }
-            else{
-                clear_oneshot_mods();
-            }
-
-        }else{
-            unregister_code(KC_RSFT);
-        }
-      }
-      return false;
       break;
 
     case REMOVE_LINE:
