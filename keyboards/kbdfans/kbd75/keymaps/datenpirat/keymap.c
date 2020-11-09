@@ -2,13 +2,13 @@
 
 /* TODO
 
-ONESHOT_TIMEOUT
-
 */
+
 
 bool autoshift_enabled = false;
 bool one_shot_shift_enabled = false;
 bool one_shot_shift_on = false;
+
 
 typedef union {
   uint32_t raw;
@@ -36,19 +36,21 @@ enum {
 };
 
 enum {
-  DEFAULT_LAYER,
-  PLAIN_LAYER,
-  SHIFT_LAYER,
-  CTRL_LAYER,
-  FUNKY_LAYER,
-  DISABLED_LAYER,
-  FN_LAYER_1,
-  FN_LAYER_2
+    DEFAULT_LAYER,
+    PLAIN_LAYER,
+    SHIFT_LAYER,
+    RSHIFT_LAYER,
+    CTRL_LAYER,
+    FUNKY_LAYER,
+    DISABLED_LAYER,
+    FN_LAYER_1,
+    FN_LAYER_2
 };
 
 //Tap Dance Declarations
 enum {
     TD_AKZENT,
+    TD_END,
     SUPER_TAB,
     SUPER_CAPS,
     SUPER_SHIFT,
@@ -56,11 +58,13 @@ enum {
     SUPER_CTRL,
     SUPER_PSCR,
 };
+
 enum custom_keycodes {
     AUTOSHIFT_TOGGLE = SAFE_RANGE,
     MARKUP_CODE,
     REMOVE_LINE,
     KC_UNSHIFT_DEL,
+    KC_UNSHIFT_HOME,
     DOUBLE_SPACE,
     TG_OSSFT,
     DP_RSFT
@@ -123,7 +127,7 @@ const rgblight_segment_t* const PROGMEM my_rgb_layers[] = RGBLIGHT_LAYERS_LIST(
     my_caps_layer,
     my_autoshift_layer
 );
-
+/*
 void custom_autoshift_set(bool enabled){
     autoshift_enabled = enabled;
     writePin(B2, !enabled);
@@ -150,7 +154,7 @@ void custom_oneshot_shift_toggle(void){
         custom_oneshot_shift_set(!one_shot_shift_enabled);
 
 }
-
+*/
 void disable_caps(){
         if(is_capslock_on()){   // Disable CAPS LOCK when it's on
             tap_code(KC_CAPS);
@@ -298,7 +302,7 @@ void super_SHIFT_finished (qk_tap_dance_state_t *state, void *user_data) {
 
   switch (tap_state.state) {
     case SINGLE_TAP:
-
+        /*
         if(one_shot_shift_enabled){
             if(!one_shot_shift_on){
                 clear_oneshot_mods();
@@ -308,70 +312,58 @@ void super_SHIFT_finished (qk_tap_dance_state_t *state, void *user_data) {
                 clear_oneshot_mods();
             }
         }
-
-
+        */
        break;
 
     default:
+        /*
         if(one_shot_shift_enabled)
             clear_oneshot_mods();
+        */
         break;
   }
 }
 
 void super_SHIFT_reset (qk_tap_dance_state_t *state, void *user_data) {
-
+ writePin(B2, false);
   switch (tap_state.state) {
     default:
         unregister_code(KC_LSFT);
         break;
   }
-
   layer_off(SHIFT_LAYER);
-
   tap_state.state = 0;
 }
 
+
 void super_RSHIFT_start (qk_tap_dance_state_t *state, void *user_data) {
   if (state->count == 1){
-      register_code(KC_RSFT);
-      //layer_on(SHIFT_LAYER);
+      register_code(KC_LSFT);
+      layer_on(SHIFT_LAYER);
   }
 }
 
 void super_RSHIFT_finished (qk_tap_dance_state_t *state, void *user_data) {
   tap_state.state = get_dance_state(state);
+
   switch (tap_state.state) {
     case SINGLE_TAP:
-        if(one_shot_shift_enabled){
-            if(!one_shot_shift_on){
-                set_oneshot_mods(MOD_LSFT);
-            }
-            else{
-                clear_oneshot_mods();
-            }
-        }
        break;
     default:
-        if(one_shot_shift_enabled)
-            clear_oneshot_mods();
         break;
   }
 }
 
 void super_RSHIFT_reset (qk_tap_dance_state_t *state, void *user_data) {
-
+ writePin(B2, true);
   switch (tap_state.state) {
     default:
-        unregister_code(KC_RSFT);
+        unregister_code(KC_LSFT);
         break;
   }
-
-  //layer_off(SHIFT_LAYER);
-
+  layer_off(SHIFT_LAYER);
   tap_state.state = 0;
 }
-
 
 void super_CAPS_start (qk_tap_dance_state_t *state, void *user_data) {
   if (state->count == 1){
@@ -384,6 +376,7 @@ void super_CAPS_finished (qk_tap_dance_state_t *state, void *user_data) {
 
   switch (tap_state.state) {
     case SINGLE_TAP:
+        /*
         if(!one_shot_shift_enabled){
             if(!(get_mods() & (MOD_BIT(KC_LSFT))))
                 set_oneshot_mods(MOD_LSFT);
@@ -393,12 +386,17 @@ void super_CAPS_finished (qk_tap_dance_state_t *state, void *user_data) {
         else{
             register_code(KC_LSFT);
         }
+        */
+       register_code(KC_HOME);
+
+
        break;
     case SINGLE_HOLD:
         layer_on(FN_LAYER_2);
         break;
     case DOUBLE_TAP:
         disable_caps();
+        /*
         //custom_autoshift_toggle();
         custom_oneshot_shift_toggle();
         if(one_shot_shift_enabled){
@@ -407,10 +405,11 @@ void super_CAPS_finished (qk_tap_dance_state_t *state, void *user_data) {
             else
                 clear_oneshot_mods();
         }
+        */
         break;
     case DOUBLE_HOLD:
-        custom_oneshot_shift_set(false); // disable autoshift
-        custom_autoshift_set(false); // disable autoshift
+        //custom_oneshot_shift_set(false); // disable autoshift
+        //custom_autoshift_set(false); // disable autoshift
         register_code(KC_CAPS);
         break;
     case DOUBLE_SINGLE_TAP:
@@ -418,7 +417,7 @@ void super_CAPS_finished (qk_tap_dance_state_t *state, void *user_data) {
         break;
     case TRIPLE_TAP:
         disable_caps();
-        custom_autoshift_toggle();
+        //custom_autoshift_toggle();
         break;
   }
 }
@@ -427,8 +426,9 @@ void super_CAPS_reset (qk_tap_dance_state_t *state, void *user_data) {
 
   switch (tap_state.state) {
     case SINGLE_TAP:
-        if(one_shot_shift_enabled)
-            unregister_code(KC_LSFT);
+        //if(one_shot_shift_enabled)
+        //    unregister_code(KC_LSFT);
+        unregister_code(KC_HOME);
         break;
     case SINGLE_HOLD:
         break;
@@ -548,7 +548,7 @@ qk_tap_dance_action_t tap_dance_actions[] = {
     [SUPER_CAPS]        = ACTION_TAP_DANCE_FN_ADVANCED(super_CAPS_start ,super_CAPS_finished, super_CAPS_reset),
     [SUPER_CTRL]        = ACTION_TAP_DANCE_FN_ADVANCED(NULL,super_CTRL_finished, super_CTRL_reset),
     [TD_AKZENT]         = ACTION_TAP_DANCE_FN_ADVANCED(NULL,super_AKZENT_finished, super_AKZENT_reset),
-    [SUPER_PSCR]        = ACTION_TAP_DANCE_FN_ADVANCED(NULL,super_PSCR_finished, super_PSCR_reset)
+    [SUPER_PSCR]        = ACTION_TAP_DANCE_FN_ADVANCED(NULL,super_PSCR_finished, super_PSCR_reset),
 
 };
 
@@ -564,7 +564,7 @@ void keyboard_post_init_user(void) {  // Call the keymap level matrix init.
     // Enable Default RGB Layer
     rgblight_set_layer_state(0, true);
 
-
+/*
     // Set One-Shot-Shift from EEPRROM
     one_shot_shift_enabled = user_config.one_shot_shift_enabled;
 
@@ -574,7 +574,7 @@ void keyboard_post_init_user(void) {  // Call the keymap level matrix init.
     rgblight_set_layer_state(5, autoshift_enabled); // Autoshift LAYER
     if (user_config.autoshift_enabled)
         autoshift_enable();
-
+*/
 }
 
 layer_state_t layer_state_set_user(layer_state_t state) {
@@ -595,7 +595,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     KC_GRV,   KC_1,     KC_2,     KC_3,     KC_4,     KC_5,     KC_6,     KC_7,     KC_8,     KC_9,     KC_0,     KC_MINS,  TD(TD_AKZENT),   XXXXXXX,  KC_BSPC,    KC_PGUP,
     KC_TAB,   KC_Q,     KC_W,     KC_E,     KC_R,     KC_T,     KC_Y,     KC_U,     KC_I,     KC_O,     KC_P,     KC_LBRC,  KC_RBRC,  KC_BSLS,              KC_PGDN ,
     TD(SUPER_CAPS),  KC_A,     KC_S,     KC_D,     KC_F,     KC_G,     KC_H,     KC_J,     KC_K,     KC_L,     KC_SCLN,  KC_QUOT,                      KC_ENT,      KC_DEL,
-    TD(SUPER_SHIFT),  KC_NUBS,  KC_Z,   KC_X,     KC_C,     KC_V,     KC_B,     KC_N,     KC_M,     KC_COMM,  KC_DOT,   KC_SLSH,  TD(SUPER_RSHIFT),       KC_UP,   KC_END ,
+    TD(SUPER_SHIFT),  KC_NUBS,  KC_Z,   KC_X,     KC_C,     KC_V,     KC_B,     KC_N,     KC_M,     KC_COMM,  KC_DOT,   KC_SLSH,  TD(SUPER_RSHIFT),       KC_UP,   KC_END,
     KC_LCTL,  KC_LGUI,  KC_LALT,                      KC_SPC,   KC_SPC,   KC_SPC,                       KC_RALT,  LT(FN_LAYER_1 ,KC_APP),  TD(SUPER_CTRL),  KC_LEFT,  KC_DOWN,  KC_RGHT
   ),
  // KC_DEL
@@ -617,10 +617,23 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  XXXXXXX,  KC_UNSHIFT_DEL, _______,
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            _______,
-    KC_ENT,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,                      _______,  _______,
-    _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            _______,  _______,
+    _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,                      _______,  _______,
+    _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_HOME,            _______,  _______,
     _______,  _______,  _______,                      _______,  _______,  _______,                      _______,  _______,  _______,  _______,  _______,   _______
    ),
+
+// Right Shift Layer
+
+	[RSHIFT_LAYER] = LAYOUT(
+    _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,
+    _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  XXXXXXX,  _______, _______,
+    _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            _______,
+    KC_ENT,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,                      _______,  _______,
+    _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_HOME,            _______,  _______,
+    _______,  _______,  _______,                      _______,  _______,  _______,                      _______,  _______,  _______,  _______,  _______,   _______
+   ),
+
+
 
     // Funky Layer
 	[FUNKY_LAYER] = LAYOUT(
@@ -647,7 +660,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     KC_WAKE,  _______, _______,  _______,  _______, _______,  _______,  KC_PSLS,  KC_PAST,  _______,  KC_NLCK,  _______,  MARKUP_CODE,  XXXXXXX, REMOVE_LINE, KC_ASUP,
     _______,  RGB_TOG,  RGB_MOD,  RGB_HUI,  RGB_HUD,  RGB_SAI,  RGB_SAD,  RGB_VAI,  RGB_VAD,  _______,  _______,  _______,  KC_PPLS,  KC_MUTE,       KC_ASDN,
     KC_CAPS,  BL_DEC,  BL_INC,  _______,  _______,  _______,  _______,  _______,  _______,  TG(DISABLED_LAYER),  _______,  KC_F20,            KC_PENT,             _______,
-    KC_LSFT,  _______,  KC_BRIU,  KC_BRID,  _______,  _______,  _______,  _______,  _______,  _______,  KC_PDOT,  KC_PMNS,  KC_ASRP,                   KC_PGUP,  _______,
+    KC_LSFT,  _______,  KC_BRIU,  KC_BRID,  _______,  _______,  _______,  _______,  _______,  _______,  KC_PDOT,  KC_PMNS,  KC_RSFT,                   KC_PGUP,  KC_ASRP,
     RESET  ,  DEBUG,  _______,                  BL_STEP,  BL_STEP,  BL_STEP,                         _______,  _______,  KC_RGUI,           KC_HOME,   KC_PGDN,  KC_END
   ),
 
@@ -662,7 +675,6 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   ),
 
 };
-
 
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
@@ -681,7 +693,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     case TG_OSSFT:
       if (record->event.pressed) {
         disable_caps();
-        custom_oneshot_shift_toggle();
+        //custom_oneshot_shift_toggle();
       } else {
 
       }
@@ -697,7 +709,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
     // Shift + Backspace = Del
     case KC_UNSHIFT_DEL:
-      	if (record->event.pressed && get_mods() & (MOD_BIT(KC_LSHIFT))) {
+      	if (record->event.pressed && get_mods() & MOD_BIT(KC_LSHIFT)) {
 			unregister_code(KC_LSFT);
 			register_code(KC_DEL);
 			return false;
@@ -707,7 +719,6 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             register_code(KC_LSFT);
 			}
 		break;
-
 
   }
 
@@ -720,8 +731,8 @@ void post_process_record_user(uint16_t keycode, keyrecord_t *record){
 
 void eeconfig_init_user(void) {  // EEPROM is getting reset!
   user_config.raw = 0;
-  user_config.autoshift_enabled = false; // We want this enabled by default
-  user_config.one_shot_shift_enabled = false; // We want this enabled by default
+  //user_config.autoshift_enabled = false; // We want this enabled by default
+  //user_config.one_shot_shift_enabled = false; // We want this enabled by default
   eeconfig_update_user(user_config.raw); // Write default value to EEPROM now
 
 }
