@@ -61,6 +61,7 @@ enum custom_keycodes {
     DP_LSFT,
     DP_RSFT,
 };
+static bool sweet_caps_enabled = true;
 
 static bool sexy_shift_enabled = true;
 static bool sexy_shift_on = false;
@@ -188,9 +189,48 @@ void update_eeprom(){
 
 bool led_update_user(led_t led_state) {
     rgblight_set_layer_state(4, led_state.caps_lock); // CAPS LAYER
-    //set_caps_led(led_state.caps_lock || sexy_shift_enabled);
+    set_caps_led(led_state.caps_lock || sexy_shift_on);
     return true;
 }
+
+bool sweet_caps_break(uint16_t keycode){
+    switch(keycode){  // Keycodes die Sexy Shift nicht stoppen.
+        case KC_A:
+        case KC_B:
+        case KC_C:
+        case KC_D:
+        case KC_E:
+        case KC_F:
+        case KC_G:
+        case KC_H:
+        case KC_I:
+        case KC_J:
+        case KC_K:
+        case KC_L:
+        case KC_M:
+        case KC_N:
+        case KC_O:
+        case KC_P:
+        case KC_Q:
+        case KC_R:
+        case KC_S:
+        case KC_T:
+        case KC_U:
+        case KC_V:
+        case KC_W:
+        case KC_X:
+        case KC_Y:
+        case KC_Z:
+        case KC_UNSHIFT_DEL:
+        case KC_DEL:
+        case KC_BSPC:
+        case KC_LEFT:
+        case KC_RIGHT:
+            return false;
+    }
+    return true;
+}
+
 
 void sexy_shift_enable(bool enabled){
     sexy_shift_enabled = enabled;
@@ -359,6 +399,8 @@ void super_CAPS_finished (qk_tap_dance_state_t *state, void *user_data) {
   switch (tap_state.state) {
     case SINGLE_TAP:
         //register_code(KC_LSFT);
+        if(sweet_caps_enabled)
+            set_caps(true);
         break;
     case SINGLE_HOLD:
         layer_on(FN_LAYER_2);
@@ -644,6 +686,11 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
     if(sexy_shift_enabled)
         sexy_shift_process(keycode);
+
+    if(sweet_caps_enabled){
+        if(sweet_caps_break(keycode) && is_capslock_on())
+            set_caps(false);
+    }
 
     switch (keycode) {
 
