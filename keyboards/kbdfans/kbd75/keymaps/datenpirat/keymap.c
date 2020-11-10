@@ -1,20 +1,10 @@
 #include QMK_KEYBOARD_H
 
-/* TODO
-
-*/
-
-
-bool autoshift_enabled = false;
-bool one_shot_shift_enabled = false;
-bool one_shot_shift_on = false;
-
 
 typedef union {
   uint32_t raw;
   struct {
-    bool     autoshift_enabled :1;
-    bool     one_shot_shift_enabled :1;
+    bool     sexy_shift_enabled :1;
   };
 } user_config_t;
 
@@ -32,19 +22,20 @@ enum {
   DOUBLE_HOLD = 4,
   DOUBLE_SINGLE_TAP = 5, //send two single taps
   TRIPLE_TAP = 6,
-  TRIPLE_HOLD = 7
+  TRIPLE_HOLD = 7,
+  SINGLE_HOLD_INTERRUPTED = 8,
 };
 
 enum {
     DEFAULT_LAYER,
     PLAIN_LAYER,
     SHIFT_LAYER,
-    RSHIFT_LAYER,
     CTRL_LAYER,
     FUNKY_LAYER,
     DISABLED_LAYER,
     FN_LAYER_1,
-    FN_LAYER_2
+    FN_LAYER_2,
+    RSHIFT_LAYER
 };
 
 //Tap Dance Declarations
@@ -54,9 +45,9 @@ enum {
     SUPER_TAB,
     SUPER_CAPS,
     SUPER_SHIFT,
-    SUPER_RSHIFT,
     SUPER_CTRL,
     SUPER_PSCR,
+    SUPER_RSHIFT
 };
 
 enum custom_keycodes {
@@ -67,18 +58,41 @@ enum custom_keycodes {
     KC_UNSHIFT_HOME,
     DOUBLE_SPACE,
     TG_OSSFT,
-    DP_RSFT
+    DP_LSFT,
+    DP_RSFT,
 };
 
+static bool sexy_shift_enabled = true;
+static bool sexy_shift_on = false;
+static bool sexy_shift_tapped = false;
+static bool sexy_shift_oneshot = false;
+static uint16_t sexy_shift_code = KC_NO;
+static uint16_t sexy_shift_layer = RSHIFT_LAYER;
+static uint16_t sexy_shift_command_keycode = KC_NO;
+static uint16_t sexy_shift_last_keycode = 0;
+static uint16_t sexy_shift_tap_timer = 0;
+
+void sexy_shift_start(uint16_t command_keycode, uint16_t code, uint16_t layer);
+void sexy_shift_reset(void);
+void sexy_shift_stop(void);
+void sexy_shift_restart(void);
+bool sexy_shift_is_tapped(void);
+void sexy_shift_process(uint16_t keycode);
+void sexy_shift_enable(bool enable);
+void sexy_shift_toggle(void);
+
 int get_dance_state (qk_tap_dance_state_t *state);
+
 //for the x tap dance. Put it here so it can be used in any keymap
 void custom_autoshift_set(bool enabled);
 void disable_caps(void);
+void set_caps(bool enabled);
+
 void update_eeprom(void);
 
-
-
-
+void set_caps_led(bool enabled){
+  writePin(B2, !enabled);
+}
 
 bool is_capslock_on(void){
     led_t led_state = host_keyboard_led_state();
@@ -156,43 +170,109 @@ void custom_oneshot_shift_toggle(void){
 }
 */
 void disable_caps(){
-        if(is_capslock_on()){   // Disable CAPS LOCK when it's on
-            tap_code(KC_CAPS);
-        }
+  set_caps(false);
 }
 
+void set_caps(bool enabled){
+  if((enabled && !is_capslock_on()) || (!enabled && is_capslock_on())){   // Disable CAPS LOCK when it's on
+    tap_code(KC_CAPS);
+  }
+}
+
+
+
 void update_eeprom(){
-    user_config.autoshift_enabled = autoshift_enabled;
-    user_config.one_shot_shift_enabled = one_shot_shift_enabled;
+    user_config.sexy_shift_enabled = sexy_shift_enabled;
     eeconfig_update_user(user_config.raw); // Writes the new status to EEPROM
 }
 
-
-void matrix_init_user(void){
-
+bool led_update_user(led_t led_state) {
+    rgblight_set_layer_state(4, led_state.caps_lock); // CAPS LAYER
+    //set_caps_led(led_state.caps_lock || sexy_shift_enabled);
+    return true;
 }
 
+void sexy_shift_enable(bool enabled){
+    sexy_shift_enabled = enabled;
+    update_eeprom();
+}
+void sexy_shift_toggle(void){
+    sexy_shift_enable(!sexy_shift_enabled);
+}
+void sexy_shift_start_oneshot(uint16_t command_keycode, uint16_t code, uint16_t layer){
+    sexy_shift_start(command_keycode,code,layer);
+    sexy_shift_oneshot = true;
+}
+void sexy_shift_start(uint16_t command_keycode, uint16_t code, uint16_t layer){
+    sexy_shift_layer = layer;
+    sexy_shift_code = code;
+    sexy_shift_command_keycode = command_keycode;
+    layer_on(sexy_shift_layer);
+    register_code(sexy_shift_code);
+    set_caps_led(true);
+    sexy_shift_on = true;
+    sexy_shift_tapped = true;
+    sexy_shift_last_keycode = 0;
+    sexy_shift_tap_timer = timer_read();
+    sexy_shift_oneshot = false;
+    autoshift_enable();
+}
+void sexy_shift_restart(){
+    sexy_shift_start(sexy_shift_command_keycode, sexy_shift_code, sexy_shift_layer);
+}
+bool sexy_shift_is_tapped(){
+    return sexy_shift_tapped && timer_elapsed(sexy_shift_tap_timer) < TAPPING_TERM;
+}
+void sexy_shift_stop(){
+    unregister_code(sexy_shift_code);
+    set_caps_led(false);
+    layer_off(sexy_shift_layer);
+    sexy_shift_on = false;
+}
+void sexy_shift_reset(){
+    sexy_shift_tapped = false;
+    sexy_shift_oneshot = false;
+    autoshift_disable();
+}
+bool sexy_shift_ignore(uint16_t keycode){
+    switch(keycode){  // Keycodes die Sexy Shift nicht stoppen.
+        case KC_1:
+        case KC_8:
+        case KC_9:
+        case KC_SPC:
+        case KC_RBRC:
+        case KC_BSPC:
+        case KC_UNSHIFT_DEL:
+            return true;
+    }
+    return false;
+}
+void sexy_shift_post_process(uint16_t keycode){
 
-bool led_update_user(led_t led_state) {
+}
+void sexy_shift_process(uint16_t keycode){
 
-  rgblight_set_layer_state(4, led_state.caps_lock); // CAPS LAYER
-
-  if (led_state.caps_lock || autoshift_enabled) {
-    writePinLow(B2);
-
-  } else {
-    writePinHigh(B2);
-  }
-  return true;
+    if(!sexy_shift_ignore(keycode)){
+        if(sexy_shift_last_keycode == 0)
+            sexy_shift_last_keycode = keycode;
+        else if(keycode != sexy_shift_last_keycode && keycode != sexy_shift_command_keycode && sexy_shift_on && !sexy_shift_oneshot){
+            sexy_shift_stop();
+        }
+        else if(keycode != sexy_shift_command_keycode){
+            sexy_shift_tapped = false;
+        }
+        sexy_shift_last_keycode = keycode;
+    }
+    sexy_shift_oneshot = false;
 }
 
 
 int get_dance_state (qk_tap_dance_state_t *state) {
   if (state->count == 1) {
-      if ((state->interrupted || !state->pressed))  return SINGLE_TAP;
+      if (state->interrupted && state->pressed)  return SINGLE_HOLD_INTERRUPTED;
+      else if (state->interrupted || !state->pressed)  return SINGLE_TAP;
       //key has not been interrupted, but they key is still held. Means you want to send a 'HOLD'.
       else return SINGLE_HOLD;
-
   }
   else if (state->count == 2) {
     /*
@@ -221,29 +301,6 @@ static tap tap_state = {
   .state = 0
 };
 
-
-void oneshot_mods_changed_user(uint8_t mods) {
-    one_shot_shift_on = (mods & MOD_MASK_SHIFT);
-    //if(one_shot_shift_enabled)
-    writePin(B2, !one_shot_shift_on);
-    /*
-  if (mods & MOD_MASK_SHIFT) {
-    println("Oneshot mods SHIFT");
-  }
-  if (mods & MOD_MASK_CTRL) {
-    println("Oneshot mods CTRL");
-  }
-  if (mods & MOD_MASK_ALT) {
-    println("Oneshot mods ALT");
-  }
-  if (mods & MOD_MASK_GUI) {
-    println("Oneshot mods GUI");
-  }
-  if (!mods) {
-    println("Oneshot mods off");
-  }
-  */
-}
 
 
 void super_AKZENT_finished (qk_tap_dance_state_t *state, void *user_data) {
@@ -290,81 +347,6 @@ void super_AKZENT_reset (qk_tap_dance_state_t *state, void *user_data) {
   tap_state.state = 0;
 }
 
-void super_SHIFT_start (qk_tap_dance_state_t *state, void *user_data) {
-  if (state->count == 1){
-      register_code(KC_LSFT);
-      layer_on(SHIFT_LAYER);
-  }
-}
-
-void super_SHIFT_finished (qk_tap_dance_state_t *state, void *user_data) {
-  tap_state.state = get_dance_state(state);
-
-  switch (tap_state.state) {
-    case SINGLE_TAP:
-        /*
-        if(one_shot_shift_enabled){
-            if(!one_shot_shift_on){
-                clear_oneshot_mods();
-                set_oneshot_mods(MOD_LSFT);
-            }
-            else{
-                clear_oneshot_mods();
-            }
-        }
-        */
-       break;
-
-    default:
-        /*
-        if(one_shot_shift_enabled)
-            clear_oneshot_mods();
-        */
-        break;
-  }
-}
-
-void super_SHIFT_reset (qk_tap_dance_state_t *state, void *user_data) {
- writePin(B2, false);
-  switch (tap_state.state) {
-    default:
-        unregister_code(KC_LSFT);
-        break;
-  }
-  layer_off(SHIFT_LAYER);
-  tap_state.state = 0;
-}
-
-
-void super_RSHIFT_start (qk_tap_dance_state_t *state, void *user_data) {
-  if (state->count == 1){
-      register_code(KC_LSFT);
-      layer_on(SHIFT_LAYER);
-  }
-}
-
-void super_RSHIFT_finished (qk_tap_dance_state_t *state, void *user_data) {
-  tap_state.state = get_dance_state(state);
-
-  switch (tap_state.state) {
-    case SINGLE_TAP:
-       break;
-    default:
-        break;
-  }
-}
-
-void super_RSHIFT_reset (qk_tap_dance_state_t *state, void *user_data) {
- writePin(B2, true);
-  switch (tap_state.state) {
-    default:
-        unregister_code(KC_LSFT);
-        break;
-  }
-  layer_off(SHIFT_LAYER);
-  tap_state.state = 0;
-}
-
 void super_CAPS_start (qk_tap_dance_state_t *state, void *user_data) {
   if (state->count == 1){
       layer_on(FN_LAYER_2);
@@ -376,26 +358,14 @@ void super_CAPS_finished (qk_tap_dance_state_t *state, void *user_data) {
 
   switch (tap_state.state) {
     case SINGLE_TAP:
-        /*
-        if(!one_shot_shift_enabled){
-            if(!(get_mods() & (MOD_BIT(KC_LSFT))))
-                set_oneshot_mods(MOD_LSFT);
-            else
-                clear_oneshot_mods();
-        }
-        else{
-            register_code(KC_LSFT);
-        }
-        */
-       register_code(KC_HOME);
-
-
-       break;
+        //register_code(KC_LSFT);
+        break;
     case SINGLE_HOLD:
         layer_on(FN_LAYER_2);
         break;
     case DOUBLE_TAP:
-        disable_caps();
+        //disable_caps();
+        sexy_shift_toggle();
         /*
         //custom_autoshift_toggle();
         custom_oneshot_shift_toggle();
@@ -426,9 +396,7 @@ void super_CAPS_reset (qk_tap_dance_state_t *state, void *user_data) {
 
   switch (tap_state.state) {
     case SINGLE_TAP:
-        //if(one_shot_shift_enabled)
-        //    unregister_code(KC_LSFT);
-        unregister_code(KC_HOME);
+        //unregister_code(KC_LSFT);
         break;
     case SINGLE_HOLD:
         break;
@@ -500,15 +468,6 @@ void super_CTRL_reset (qk_tap_dance_state_t *state, void *user_data) {
   tap_state.state = 0;
 }
 
-/*
-void super_PSCR_start (qk_tap_dance_state_t *state, void *user_data) {
-  if (state->count == 1){
-      register_code(KC_LSFT);
-      layer_on(SHIFT_LAYER);
-  }
-}
-*/
-
 void super_PSCR_finished (qk_tap_dance_state_t *state, void *user_data) {
   tap_state.state = get_dance_state(state);
   switch (tap_state.state) {
@@ -543,13 +502,10 @@ void super_PSCR_reset (qk_tap_dance_state_t *state, void *user_data) {
 
 //Tap Dance Definitions
 qk_tap_dance_action_t tap_dance_actions[] = {
-    [SUPER_SHIFT]       = ACTION_TAP_DANCE_FN_ADVANCED(super_SHIFT_start ,super_SHIFT_finished, super_SHIFT_reset),
-    [SUPER_RSHIFT]      = ACTION_TAP_DANCE_FN_ADVANCED(super_RSHIFT_start ,super_RSHIFT_finished, super_RSHIFT_reset),
     [SUPER_CAPS]        = ACTION_TAP_DANCE_FN_ADVANCED(super_CAPS_start ,super_CAPS_finished, super_CAPS_reset),
     [SUPER_CTRL]        = ACTION_TAP_DANCE_FN_ADVANCED(NULL,super_CTRL_finished, super_CTRL_reset),
     [TD_AKZENT]         = ACTION_TAP_DANCE_FN_ADVANCED(NULL,super_AKZENT_finished, super_AKZENT_reset),
     [SUPER_PSCR]        = ACTION_TAP_DANCE_FN_ADVANCED(NULL,super_PSCR_finished, super_PSCR_reset),
-
 };
 
 
@@ -564,8 +520,12 @@ void keyboard_post_init_user(void) {  // Call the keymap level matrix init.
     // Enable Default RGB Layer
     rgblight_set_layer_state(0, true);
 
+    // Set Sexy-Shift from EEPRROM
+    sexy_shift_enabled = user_config.sexy_shift_enabled;
+    set_caps_led(false);
+
 /*
-    // Set One-Shot-Shift from EEPRROM
+    // Set Sexy-Shift from EEPRROM
     one_shot_shift_enabled = user_config.one_shot_shift_enabled;
 
     // Set Autoshift from EEPRROM
@@ -589,13 +549,17 @@ layer_state_t layer_state_set_user(layer_state_t state) {
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     // LM(SHIFT_LAYER , MOD_LSFT)
+    // RSFT_T(KC_HOME)
+    /// TD(SUPER_CTRL)
+    // TD(SUPER_RSHIFT)
+    //TD(SUPER_SHIFT)
   // DEFAULT
 	[DEFAULT_LAYER] = LAYOUT(
     KC_ESC,   KC_F1,    KC_F2,    KC_F3,    KC_F4,    KC_F5,    KC_F6,    KC_F7,    KC_F8,    KC_F9,    KC_F10,   KC_F11,   KC_F12,   TD(SUPER_PSCR),  KC_HOME,   KC_INS,
     KC_GRV,   KC_1,     KC_2,     KC_3,     KC_4,     KC_5,     KC_6,     KC_7,     KC_8,     KC_9,     KC_0,     KC_MINS,  TD(TD_AKZENT),   XXXXXXX,  KC_BSPC,    KC_PGUP,
     KC_TAB,   KC_Q,     KC_W,     KC_E,     KC_R,     KC_T,     KC_Y,     KC_U,     KC_I,     KC_O,     KC_P,     KC_LBRC,  KC_RBRC,  KC_BSLS,              KC_PGDN ,
     TD(SUPER_CAPS),  KC_A,     KC_S,     KC_D,     KC_F,     KC_G,     KC_H,     KC_J,     KC_K,     KC_L,     KC_SCLN,  KC_QUOT,                      KC_ENT,      KC_DEL,
-    TD(SUPER_SHIFT),  KC_NUBS,  KC_Z,   KC_X,     KC_C,     KC_V,     KC_B,     KC_N,     KC_M,     KC_COMM,  KC_DOT,   KC_SLSH,  TD(SUPER_RSHIFT),       KC_UP,   KC_END,
+    DP_LSFT,  KC_NUBS,  KC_Z,   KC_X,     KC_C,     KC_V,     KC_B,     KC_N,     KC_M,     KC_COMM,  KC_DOT,   KC_SLSH,  DP_RSFT,       KC_UP,   KC_END,
     KC_LCTL,  KC_LGUI,  KC_LALT,                      KC_SPC,   KC_SPC,   KC_SPC,                       KC_RALT,  LT(FN_LAYER_1 ,KC_APP),  TD(SUPER_CTRL),  KC_LEFT,  KC_DOWN,  KC_RGHT
   ),
  // KC_DEL
@@ -629,7 +593,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  XXXXXXX,  _______, _______,
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            _______,
     KC_ENT,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,                      _______,  _______,
-    _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_HOME,            _______,  _______,
+    KC_END,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            _______,  _______,
     _______,  _______,  _______,                      _______,  _______,  _______,                      _______,  _______,  _______,  _______,  _______,   _______
    ),
 
@@ -676,57 +640,100 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
 };
 
-
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
+    if(sexy_shift_enabled)
+        sexy_shift_process(keycode);
 
-  switch (keycode) {
+    switch (keycode) {
 
-    case MARKUP_CODE:
-      if (record->event.pressed) {
-        SEND_STRING("+ + + ");
-      } else {
+        case DP_LSFT:
+            if (record->event.pressed) {
+                if(sexy_shift_enabled)
+                    sexy_shift_start(keycode, KC_LSFT, SHIFT_LAYER);
+                else
+                    register_code(KC_LSFT);
+            }
+            else if (!record->event.pressed) {
+                if(sexy_shift_enabled) {
+                    sexy_shift_stop();
+                    if(sexy_shift_is_tapped()){
+                        //tap_code(KC_HOME);
+                    }
+                    sexy_shift_reset();
+                }
+                else
+                    unregister_code(KC_LSFT);
+            }
+            break;
 
-      }
-      break;
+        case DP_RSFT:
+            if (record->event.pressed) {
+                if(sexy_shift_enabled)
+                    sexy_shift_start(keycode, KC_RSFT, RSHIFT_LAYER);
+                else
+                    register_code(KC_RSFT);
+            }
+            else if (!record->event.pressed) {
+                if(sexy_shift_enabled) {
+                    sexy_shift_stop();
+                    if(sexy_shift_is_tapped()){
+                        tap_code(KC_HOME);
+                    }
+                    sexy_shift_reset();
+                }
 
-    case TG_OSSFT:
-      if (record->event.pressed) {
-        disable_caps();
-        //custom_oneshot_shift_toggle();
-      } else {
+                else
+                    unregister_code(KC_RSFT);
+            }
+            break;
 
-      }
-      break;
 
-    case REMOVE_LINE:
-      if (record->event.pressed) {
-          tap_code(KC_END); register_code(KC_LSFT); tap_code(KC_HOME); unregister_code(KC_LSFT); tap_code(KC_DEL);
-      } else {
+        case MARKUP_CODE:
+        if (record->event.pressed) {
+            SEND_STRING("+ + + ");
+        } else {
 
-      }
-      break;
+        }
+        break;
 
-    // Shift + Backspace = Del
-    case KC_UNSHIFT_DEL:
-      	if (record->event.pressed && get_mods() & MOD_BIT(KC_LSHIFT)) {
-			unregister_code(KC_LSFT);
-			register_code(KC_DEL);
-			return false;
-			}
-		else if (!record->event.pressed) {
-			unregister_code(KC_DEL);
+        case TG_OSSFT:
+        if (record->event.pressed) {
+            disable_caps();
+            //custom_oneshot_shift_toggle();
+        } else {
+
+        }
+        break;
+
+        case REMOVE_LINE:
+        if (record->event.pressed) {
+            tap_code(KC_END); register_code(KC_LSFT); tap_code(KC_HOME); unregister_code(KC_LSFT); tap_code(KC_DEL);
+        } else {
+
+        }
+        break;
+
+        // Shift + Backspace = Del
+        case KC_UNSHIFT_DEL:
+        if (record->event.pressed && get_mods() & MOD_BIT(KC_LSHIFT)) {
+            unregister_code(KC_LSFT);
+            register_code(KC_DEL);
+            return false;
+        }
+            else if (!record->event.pressed) {
+            unregister_code(KC_DEL);
             register_code(KC_LSFT);
-			}
-		break;
+                }
+            break;
 
-  }
+    }
 
-  return true;
+    return true;
 };
 
 void post_process_record_user(uint16_t keycode, keyrecord_t *record){
-
+    sexy_shift_post_process(keycode);
 }
 
 void eeconfig_init_user(void) {  // EEPROM is getting reset!
