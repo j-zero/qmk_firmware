@@ -248,14 +248,14 @@ void sexy_shift_start(uint16_t command_keycode, uint16_t code, uint16_t layer){
     sexy_shift_code = code;
     sexy_shift_command_keycode = command_keycode;
     layer_on(sexy_shift_layer);
-    register_code(sexy_shift_code);
+    autoshift_enable();
+    register_mods(MOD_BIT(sexy_shift_code));
     set_caps_led(true);
     sexy_shift_on = true;
     sexy_shift_tapped = true;
     sexy_shift_last_keycode = 0;
     sexy_shift_tap_timer = timer_read();
     sexy_shift_oneshot = false;
-    autoshift_enable();
 }
 void sexy_shift_restart(){
     sexy_shift_start(sexy_shift_command_keycode, sexy_shift_code, sexy_shift_layer);
@@ -264,7 +264,7 @@ bool sexy_shift_is_tapped(){
     return sexy_shift_tapped && timer_elapsed(sexy_shift_tap_timer) < TAPPING_TERM;
 }
 void sexy_shift_stop(){
-    unregister_code(sexy_shift_code);
+    unregister_mods(MOD_BIT(sexy_shift_code));
     set_caps_led(false);
     layer_off(sexy_shift_layer);
     sexy_shift_on = false;
@@ -283,6 +283,9 @@ bool sexy_shift_ignore(uint16_t keycode){
         case KC_RBRC:
         case KC_BSPC:
         case KC_UNSHIFT_DEL:
+        case KC_COMM:
+        case KC_DOT:
+        case KC_SLSH:
             return true;
     }
     return false;
@@ -684,10 +687,11 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
-    if(sexy_shift_enabled)
+
+    if(sexy_shift_enabled && record->event.pressed)
         sexy_shift_process(keycode);
 
-    if(sweet_caps_enabled){
+    if(sweet_caps_enabled && record->event.pressed){
         if(sweet_caps_break(keycode) && is_capslock_on())
             set_caps(false);
     }
