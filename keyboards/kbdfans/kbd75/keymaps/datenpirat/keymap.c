@@ -82,6 +82,7 @@ void sexy_shift_reset(void);
 void sexy_shift_stop(void);
 void sexy_shift_restart(void);
 bool sexy_shift_is_tapped(void);
+bool sexy_shift_is_tapped_time(uint16_t term);
 void sexy_shift_process(uint16_t keycode);
 void sexy_shift_enable(bool enable);
 void sexy_shift_toggle(void);
@@ -280,6 +281,9 @@ void sexy_shift_restart(){
 bool sexy_shift_is_tapped(){
     return sexy_shift_tapped && timer_elapsed(sexy_shift_tap_timer) < TAPPING_TERM;
 }
+bool sexy_shift_is_tapped_time(uint16_t term){
+    return sexy_shift_tapped && timer_elapsed(sexy_shift_tap_timer) < term;
+}
 void sexy_shift_stop(){
     unregister_mods(MOD_BIT(sexy_shift_code));
     set_caps_led(false);
@@ -332,8 +336,8 @@ void sexy_shift_process(uint16_t keycode){
 
 int get_dance_state (qk_tap_dance_state_t *state) {
   if (state->count == 1) {
-     // if (state->interrupted && state->pressed)  return SINGLE_HOLD_INTERRUPTED;
-      if (state->interrupted || !state->pressed)  return SINGLE_TAP;
+      if (state->interrupted && state->pressed)  return SINGLE_HOLD_INTERRUPTED;    // taste wurde während des gedrückt haltens unterbrochen
+      else if (state->interrupted || !state->pressed)  return SINGLE_TAP;
       //key has not been interrupted, but they key is still held. Means you want to send a 'HOLD'.
       else return SINGLE_HOLD;
   }
@@ -713,9 +717,9 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             else if (!record->event.pressed) {
                if(sexy_shift_enabled){
                     sexy_shift_stop();
-                    if(sexy_shift_is_tapped()){
+                    //if(sexy_shift_is_tapped()){
                         //tap_code(KC_HOME);
-                    }
+                    //}
                     sexy_shift_reset();
                 }
                 else
@@ -735,9 +739,9 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             else if (!record->event.pressed) {
                 if(sexy_shift_enabled){
                     sexy_shift_stop();
-                    if(sexy_shift_is_tapped()){
-                        tap_code(KC_HOME);
-                    }
+                    //if(sexy_shift_is_tapped_time(100)){
+                        //tap_code(KC_HOME);
+                    //}
                     sexy_shift_reset();
                 }
 
