@@ -5,6 +5,7 @@ typedef union {
   uint32_t raw;
   struct {
     bool     sexy_shift_enabled :1;
+    bool     sweet_caps_enabled :1;
   };
 } user_config_t;
 
@@ -73,6 +74,9 @@ static uint16_t sexy_shift_command_keycode = KC_NO;
 static uint16_t sexy_shift_last_keycode = 0;
 static uint16_t sexy_shift_tap_timer = 0;
 
+void print_keycode(uint16_t keycode);
+uint16_t get_td_keycode(uint16_t n);
+
 void sexy_shift_start(uint16_t command_keycode, uint16_t code, uint16_t layer);
 void sexy_shift_reset(void);
 void sexy_shift_stop(void);
@@ -86,7 +90,6 @@ int get_dance_state (qk_tap_dance_state_t *state);
 
 //for the x tap dance. Put it here so it can be used in any keymap
 void custom_autoshift_set(bool enabled);
-void disable_caps(void);
 void set_caps(bool enabled);
 
 void update_eeprom(void);
@@ -124,10 +127,8 @@ const rgblight_segment_t PROGMEM my_caps_layer[] = RGBLIGHT_LAYER_SEGMENTS(
 );
 
 // Autoshift
-const rgblight_segment_t PROGMEM my_autoshift_layer[] = RGBLIGHT_LAYER_SEGMENTS(
-    { 0, 16, 0, 0, 0},
-    { 0, 1, HSV_GREEN},
-    { 15, 1, HSV_GREEN}
+const rgblight_segment_t PROGMEM my_acknowledge_layer[] = RGBLIGHT_LAYER_SEGMENTS(
+    { 0, 16, HSV_WHITE}
 );
 
 
@@ -140,7 +141,7 @@ const rgblight_segment_t* const PROGMEM my_rgb_layers[] = RGBLIGHT_LAYERS_LIST(
     my_layer3_layer,     // Overrides other layers
     my_layer4_layer,     // Overrides other layers
     my_caps_layer,
-    my_autoshift_layer
+    my_acknowledge_layer
 );
 /*
 void custom_autoshift_set(bool enabled){
@@ -170,21 +171,29 @@ void custom_oneshot_shift_toggle(void){
 
 }
 */
-void disable_caps(){
-  set_caps(false);
-}
 
 void set_caps(bool enabled){
-  if((enabled && !is_capslock_on()) || (!enabled && is_capslock_on())){   // Disable CAPS LOCK when it's on
-    tap_code(KC_CAPS);
-  }
+    if(is_capslock_on()){
+        if(!enabled){
+            //tap_code(KC_CAPS);
+        }
+    }
+    else{
+        if(enabled){
+            //tap_code(KC_CAPS);
+        }
+
+    }
 }
 
 
 
 void update_eeprom(){
     user_config.sexy_shift_enabled = sexy_shift_enabled;
+    user_config.sweet_caps_enabled = sweet_caps_enabled;
+    rgblight_blink_layer(5, 250);
     eeconfig_update_user(user_config.raw); // Writes the new status to EEPROM
+
 }
 
 bool led_update_user(led_t led_state) {
@@ -192,9 +201,15 @@ bool led_update_user(led_t led_state) {
     set_caps_led(led_state.caps_lock || sexy_shift_on);
     return true;
 }
-
+void sweet_caps_enable(bool enabled){
+    sweet_caps_enabled = enabled;
+    update_eeprom();
+}
+void sweet_caps_toggle(void){
+    sweet_caps_enable(!sweet_caps_enabled);
+}
 bool sweet_caps_break(uint16_t keycode){
-    switch(keycode){  // Keycodes die Sexy Shift nicht stoppen.
+    switch(keycode){  // Keycodes die CAPS nicht deaktivieren.
         case KC_A:
         case KC_B:
         case KC_C:
@@ -226,6 +241,8 @@ bool sweet_caps_break(uint16_t keycode){
         case KC_BSPC:
         case KC_LEFT:
         case KC_RIGHT:
+        case KC_SLSH:
+        case KC_CAPS:
             return false;
     }
     return true;
@@ -315,8 +332,8 @@ void sexy_shift_process(uint16_t keycode){
 
 int get_dance_state (qk_tap_dance_state_t *state) {
   if (state->count == 1) {
-      if (state->interrupted && state->pressed)  return SINGLE_HOLD_INTERRUPTED;
-      else if (state->interrupted || !state->pressed)  return SINGLE_TAP;
+     // if (state->interrupted && state->pressed)  return SINGLE_HOLD_INTERRUPTED;
+      if (state->interrupted || !state->pressed)  return SINGLE_TAP;
       //key has not been interrupted, but they key is still held. Means you want to send a 'HOLD'.
       else return SINGLE_HOLD;
   }
@@ -404,38 +421,20 @@ void super_CAPS_finished (qk_tap_dance_state_t *state, void *user_data) {
 
   switch (tap_state.state) {
     case SINGLE_TAP:
-        //register_code(KC_LSFT);
-        if(sweet_caps_enabled)
-            set_caps(true);
+        register_code(KC_CAPS);
         break;
     case SINGLE_HOLD:
         layer_on(FN_LAYER_2);
         break;
     case DOUBLE_TAP:
-        //disable_caps();
         sexy_shift_toggle();
-        /*
-        //custom_autoshift_toggle();
-        custom_oneshot_shift_toggle();
-        if(one_shot_shift_enabled){
-            if(!(get_mods() & (MOD_BIT(KC_LSFT))))
-                set_oneshot_mods(MOD_LSFT);
-            else
-                clear_oneshot_mods();
-        }
-        */
         break;
     case DOUBLE_HOLD:
-        //custom_oneshot_shift_set(false); // disable autoshift
-        //custom_autoshift_set(false); // disable autoshift
-        register_code(KC_CAPS);
+        sweet_caps_toggle();
         break;
     case DOUBLE_SINGLE_TAP:
-        //register_code(KC_X); unregister_code(KC_X); register_code(KC_X);
         break;
     case TRIPLE_TAP:
-        disable_caps();
-        //custom_autoshift_toggle();
         break;
   }
 }
@@ -444,17 +443,15 @@ void super_CAPS_reset (qk_tap_dance_state_t *state, void *user_data) {
 
   switch (tap_state.state) {
     case SINGLE_TAP:
-        //unregister_code(KC_LSFT);
+        unregister_code(KC_CAPS);
         break;
     case SINGLE_HOLD:
         break;
     case DOUBLE_TAP:
         break;
     case DOUBLE_HOLD:
-        unregister_code(KC_CAPS);
         break;
     case DOUBLE_SINGLE_TAP:
-        //unregister_code(KC_X);
         break;
     case TRIPLE_TAP:
 
@@ -570,7 +567,10 @@ void keyboard_post_init_user(void) {  // Call the keymap level matrix init.
 
     // Set Sexy-Shift from EEPRROM
     sexy_shift_enabled = user_config.sexy_shift_enabled;
+    sweet_caps_enabled = user_config.sweet_caps_enabled;
     set_caps_led(false);
+
+
 
 /*
     // Set Sexy-Shift from EEPRROM
@@ -690,13 +690,13 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
+  // If console is enabled, it will print the matrix position and status of each key pressed
 
     if(sexy_shift_enabled && record->event.pressed)
         sexy_shift_process(keycode);
 
-    if(sweet_caps_enabled && record->event.pressed){
-        if(sweet_caps_break(keycode) && is_capslock_on())
-            set_caps(false);
+    if(sweet_caps_enabled && record->event.pressed && keycode != TD(SUPER_CAPS) && keycode != KC_CAPS && sweet_caps_break(keycode) && is_capslock_on()){
+            tap_code(KC_CAPS);
     }
 
     switch (keycode) {
@@ -711,7 +711,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                     register_code(KC_LSFT);
             }
             else if (!record->event.pressed) {
-                if(sexy_shift_enabled) {
+               if(sexy_shift_enabled){
                     sexy_shift_stop();
                     if(sexy_shift_is_tapped()){
                         //tap_code(KC_HOME);
@@ -733,7 +733,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                     register_code(KC_RSFT);
             }
             else if (!record->event.pressed) {
-                if(sexy_shift_enabled) {
+                if(sexy_shift_enabled){
                     sexy_shift_stop();
                     if(sexy_shift_is_tapped()){
                         tap_code(KC_HOME);
@@ -757,8 +757,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
         case TG_OSSFT:
         if (record->event.pressed) {
-            disable_caps();
-            //custom_oneshot_shift_toggle();
+
         } else {
 
         }
@@ -802,3 +801,8 @@ void eeconfig_init_user(void) {  // EEPROM is getting reset!
 
 }
 
+void print_keycode(uint16_t keycode) {
+    char display[8];
+    snprintf(display, 8, "\n%d\n", keycode);
+    send_string((const char *)display);
+}
