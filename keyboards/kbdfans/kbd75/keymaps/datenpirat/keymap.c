@@ -276,6 +276,8 @@ void sexy_shift_reset(){
 }
 bool sexy_shift_ignore(uint16_t keycode){
     switch(keycode){  // Keycodes die Sexy Shift nicht stoppen.
+        case DP_LSFT:
+        case DP_RSFT:
         case KC_1:
         case KC_8:
         case KC_9:
@@ -286,6 +288,7 @@ bool sexy_shift_ignore(uint16_t keycode){
         case KC_COMM:
         case KC_DOT:
         case KC_SLSH:
+
             return true;
     }
     return false;
@@ -627,7 +630,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  XXXXXXX,  KC_UNSHIFT_DEL, _______,
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            _______,
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,                      _______,  _______,
-    _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_HOME,            _______,  _______,
+    _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            _______,  _______,
     _______,  _______,  _______,                      _______,  _______,  _______,                      _______,  _______,  _______,  _______,  _______,   _______
    ),
 
@@ -638,7 +641,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  XXXXXXX,  _______, _______,
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            _______,
     KC_ENT,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,                      _______,  _______,
-    KC_END,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            _______,  _______,
+    _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            _______,  _______,
     _______,  _______,  _______,                      _______,  _______,  _______,                      _______,  _______,  _______,  _______,  _______,   _______
    ),
 
@@ -700,8 +703,10 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
         case DP_LSFT:
             if (record->event.pressed) {
-                if(sexy_shift_enabled)
+                if(sexy_shift_enabled){
+                    sexy_shift_stop();
                     sexy_shift_start(keycode, KC_LSFT, SHIFT_LAYER);
+                }
                 else
                     register_code(KC_LSFT);
             }
@@ -720,8 +725,10 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
         case DP_RSFT:
             if (record->event.pressed) {
-                if(sexy_shift_enabled)
+                if(sexy_shift_enabled){
+                    sexy_shift_stop();
                     sexy_shift_start(keycode, KC_RSFT, RSHIFT_LAYER);
+                }
                 else
                     register_code(KC_RSFT);
             }
