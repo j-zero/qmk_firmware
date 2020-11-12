@@ -1,6 +1,7 @@
 #include QMK_KEYBOARD_H
 
 
+
 typedef union {
   uint32_t raw;
   struct {
@@ -25,6 +26,7 @@ enum {
   TRIPLE_TAP = 6,
   TRIPLE_HOLD = 7,
   SINGLE_HOLD_INTERRUPTED = 8,
+  TAP_END = 9
 };
 
 enum {
@@ -266,7 +268,7 @@ void sexy_shift_start(uint16_t command_keycode, uint16_t code, uint16_t layer){
     sexy_shift_code = code;
     sexy_shift_command_keycode = command_keycode;
     layer_on(sexy_shift_layer);
-    autoshift_enable();
+    //autoshift_enable();
     register_mods(MOD_BIT(sexy_shift_code));
     set_caps_led(true);
     sexy_shift_on = true;
@@ -293,7 +295,7 @@ void sexy_shift_stop(){
 void sexy_shift_reset(){
     sexy_shift_tapped = false;
     sexy_shift_oneshot = false;
-    autoshift_disable();
+    //autoshift_disable();
 }
 bool sexy_shift_ignore(uint16_t keycode){
     switch(keycode){  // Keycodes die Sexy Shift nicht stoppen.
@@ -323,7 +325,12 @@ void sexy_shift_process(uint16_t keycode){
         if(sexy_shift_last_keycode == 0)
             sexy_shift_last_keycode = keycode;
         else if(keycode != sexy_shift_last_keycode && keycode != sexy_shift_command_keycode && sexy_shift_on && !sexy_shift_oneshot){
-            sexy_shift_stop();
+            if(timer_elapsed(sexy_shift_tap_timer) < SEXYSHIFT_TERM)
+                sexy_shift_stop();
+            else{
+                //autoshift_disable();
+                set_caps_led(false);
+            }
         }
         else if(keycode != sexy_shift_command_keycode){
             sexy_shift_tapped = false;
@@ -358,7 +365,7 @@ int get_dance_state (qk_tap_dance_state_t *state) {
     if (state->interrupted || !state->pressed)  return TRIPLE_TAP;
     else return TRIPLE_HOLD;
   }
-  else return 8; //magic number. At some point this method will expand to work for more presses
+  else return TAP_END; //magic number. At some point this method will expand to work for more presses
 }
 
 
