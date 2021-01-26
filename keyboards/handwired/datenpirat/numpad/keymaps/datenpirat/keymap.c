@@ -2,6 +2,10 @@
 
 #include "raw_hid.h"
 
+#define PROTOCOL_VERSION 0x01
+#define SUCCESS 0x01
+#define FAILED 0xff
+
 enum {
   DEFAULT_LAYER = 0,
   PLAIN_LAYER,
@@ -30,6 +34,25 @@ enum {
   TRIPLE_TAP = 6,
   TRIPLE_HOLD = 7
 };
+
+enum RAW_COMMAND_ID
+{
+    RAW_COMMAND_GET_PROTOCOL_VERSION=0x01,
+
+    RAW_COMMAND_RGBLIGHT_SETRGB=0xC0,
+    RAW_COMMAND_RGBLIGHT_SETHSV=0xC1,
+    RAW_COMMAND_RGBLIGHT_STEP=0xC2,
+    RAW_COMMAND_RGBLIGHT_SET=0xC3,
+    RAW_COMMAND_RGBLIGHT_ENABLE=0xC4,
+    RAW_COMMAND_RGBLIGHT_DISABLE=0xC5,
+
+    RAW_COMMAND_LAYER_INVERT=0xB1,
+    RAW_COMMAND_LAYER_ON=0xB2,
+    RAW_COMMAND_LAYER_OFF=0xB3,
+    RAW_COMMAND_LAYER_REPORT=0xB0,
+    RAW_COMMAND_UNDEFINED=0xff,
+};
+
 
 int LED_RED = 1;
 int LED_GREEN = 0;
@@ -172,6 +195,7 @@ void dance_NUM_finished (qk_tap_dance_state_t *state, void *user_data) {
     case DOUBLE_HOLD:
         break;
     case TRIPLE_TAP:
+        layer_invert(CONF_LAYER);
         break;
     case TRIPLE_HOLD:
         reset_keyboard();
@@ -274,6 +298,16 @@ void keyboard_post_init_user(void) {
 
 
 layer_state_t layer_state_set_user(layer_state_t state) {
+
+#ifdef RAW_ENABLE
+    uint8_t *report = malloc(sizeof(uint8_t) * RAW_EPSIZE);
+    report[0] = RAW_COMMAND_LAYER_REPORT;
+    report[1] = 0x01;
+    report[2] = biton32(state);
+    raw_hid_send(report,RAW_EPSIZE);
+    free(report);
+#endif
+
     // Both layers will light up if both kb layers are active
     rgblight_set_layer_state(0, layer_state_cmp(state, DEFAULT_LAYER));
     rgblight_set_layer_state(1, layer_state_cmp(state, PLAIN_LAYER));
@@ -292,6 +326,9 @@ layer_state_t layer_state_set_user(layer_state_t state) {
         writePin(B4, LED_RED);
         writePin(B5, LED_GREEN);
     }
+
+
+
     return state;
 }
 
@@ -319,6 +356,21 @@ bool led_update_user(led_t led_state) {
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
+/*
+#ifdef RAW_ENABLE
+    if(key_event_report && record -> event.pressed) // only sent when pressed
+    {
+        keypos_t key = record->event.key;
+        uint8_t *report = malloc(sizeof(uint8_t) * RAW_EPSIZE);
+        report[0] = RAW_COMMAND_REPORT_KEY_EVENT;
+        report[1] = 0x02;
+        report[2] = key.col;
+        report[3] = key.row;
+        raw_hid_send(report,RAW_EPSIZE);
+        free(report);
+    }
+#endif
+*/
   switch (keycode) {
     case DP_CALC:
         if (record->event.pressed) {
@@ -397,7 +449,127 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   )
 };
 
+void raw_hid_receive( uint8_t *data, uint8_t length )
+{
+    uint8_t *command_id = &(data[0]);
+    uint8_t *command_data = &(data[1]);
+    switch ( *command_id )
+    {
+        case RAW_COMMAND_GET_PROTOCOL_VERSION:
+        {
+            command_data[0]=0x01;
+            command_data[1]=PROTOCOL_VERSION;
+            break;
+        }
+        case RAW_COMMAND_RGBLIGHT_SETHSV:
+        {
+            if(command_data[0] != 3 )
+            {
+                command_data[0]=0x01;
+                command_data[1]=FAILED;
+            }
+            else
+            {
+                rgblight_sethsv(command_data[1], command_data[2], command_data[3]);
+                command_data[0]=0x04;
+                command_data[4]=SUCCESS;
+            }
+            break;
+        }
+        case RAW_COMMAND_RGBLIGHT_SETRGB:
+        {
+            if(command_data[0] != 3 )
+            {
+                command_data[0]=0x01;
+                command_data[1]=FAILED;
+            }
+            else
+            {
+                rgblight_setrgb(command_data[1], command_data[2], command_data[3]);
+                command_data[0]=0x04;
+                command_data[4]=SUCCESS;
+            }
+            break;
+        }
+        case RAW_COMMAND_RGBLIGHT_STEP:
+        {
+            rgblight_step();
+            command_data[0]=0x03;
+            command_data[1]=rgblight_is_enabled();
+            command_data[2]=rgblight_get_mode();
+            command_data[3]=SUCCESS;
+            break;
+        }
+        case RAW_COMMAND_RGBLIGHT_SET:
+        {
+            rgblight_mode(command_data[1]);
+            command_data[0]=0x03;
+            command_data[1]=rgblight_is_enabled();
+            command_data[2]=rgblight_get_mode();
+            command_data[3]=SUCCESS;
+            break;
+        }
+        case RAW_COMMAND_RGBLIGHT_ENABLE:
+        {
+            rgblight_enable();
+            command_data[0]=0x03;
+            command_data[1]=rgblight_is_enabled();
+            command_data[2]=rgblight_get_mode();
+            command_data[3]=SUCCESS;
+            break;
+        }
+        case RAW_COMMAND_RGBLIGHT_DISABLE:
+        {
+            rgblight_disable();
+            command_data[0]=0x03;
+            command_data[1]=rgblight_is_enabled();
+            command_data[2]=rgblight_get_mode();
+            command_data[3]=SUCCESS;
+            break;
+        }
+        case RAW_COMMAND_LAYER_REPORT:
+        {
+            command_data[0]=0x01;
+            command_data[1]=biton32(layer_state);
+            break;
+        }
+        case RAW_COMMAND_LAYER_INVERT:
+        case RAW_COMMAND_LAYER_ON:
+        case RAW_COMMAND_LAYER_OFF:
+        {
 
-void raw_hid_receive(uint8_t *data, uint8_t length) {
-    raw_hid_send(data, length);
+            command_data[0]=0x02;   // length
+
+            uint8_t new_layer = command_data[1];
+
+            if(*command_id == RAW_COMMAND_LAYER_INVERT)
+                layer_invert(new_layer);
+            else if(*command_id == RAW_COMMAND_LAYER_ON)
+                layer_on(new_layer);
+            else if(*command_id == RAW_COMMAND_LAYER_OFF)
+                layer_off(new_layer);
+
+
+            command_data[1]=biton32(layer_state);
+
+            if(biton32(layer_state) == new_layer)
+                command_data[2]=SUCCESS;
+            else{
+                //command_data[1] = *command_id;
+                command_data[2]=FAILED;
+            }
+
+            *command_id=RAW_COMMAND_LAYER_REPORT;
+
+            break;
+        }
+        default: //0xff ...
+        {
+            *command_id=RAW_COMMAND_UNDEFINED;
+            command_data[0]=0x01;
+            command_data[1]=FAILED;
+            break;
+        }
+    }
+    raw_hid_send(data,length);
 }

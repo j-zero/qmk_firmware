@@ -64,6 +64,7 @@ enum custom_keycodes {
     DP_LSFT,
     DP_RSFT,
 };
+
 static bool sweet_caps_enabled = true;
 
 static bool sexy_shift_enabled = true;
@@ -273,7 +274,7 @@ void sexy_shift_start(uint16_t command_keycode, uint16_t code, uint16_t layer){
     set_caps_led(true);
     sexy_shift_on = true;
     sexy_shift_tapped = true;
-    sexy_shift_last_keycode = 0;
+    sexy_shift_last_keycode = 0;        // reset last keycode
     sexy_shift_tap_timer = timer_read();
     sexy_shift_oneshot = false;
 }
@@ -322,8 +323,10 @@ void sexy_shift_post_process(uint16_t keycode){
 void sexy_shift_process(uint16_t keycode){
 
     if(!sexy_shift_ignore(keycode)){
-        if(sexy_shift_last_keycode == 0)
+        if(sexy_shift_last_keycode == 0){
             sexy_shift_last_keycode = keycode;
+            sexy_shift_tap_timer = timer_read();        // restart timer on first button
+        }
         else if(keycode != sexy_shift_last_keycode && keycode != sexy_shift_command_keycode && sexy_shift_on && !sexy_shift_oneshot){
             if(timer_elapsed(sexy_shift_tap_timer) < SEXYSHIFT_TERM)
                 sexy_shift_stop();
@@ -573,27 +576,15 @@ void keyboard_post_init_user(void) {  // Call the keymap level matrix init.
 
     // Set RGB Layers
     rgblight_layers = my_rgb_layers;
+
     // Enable Default RGB Layer
     rgblight_set_layer_state(0, true);
 
-    // Set Sexy-Shift from EEPRROM
+    // Set functions from EEPRROM
     sexy_shift_enabled = user_config.sexy_shift_enabled;
     sweet_caps_enabled = user_config.sweet_caps_enabled;
     set_caps_led(false);
 
-
-
-/*
-    // Set Sexy-Shift from EEPRROM
-    one_shot_shift_enabled = user_config.one_shot_shift_enabled;
-
-    // Set Autoshift from EEPRROM
-    autoshift_enabled = user_config.autoshift_enabled;
-    writePin(B2, !user_config.autoshift_enabled);
-    rgblight_set_layer_state(5, autoshift_enabled); // Autoshift LAYER
-    if (user_config.autoshift_enabled)
-        autoshift_enable();
-*/
 }
 
 layer_state_t layer_state_set_user(layer_state_t state) {
@@ -607,11 +598,7 @@ layer_state_t layer_state_set_user(layer_state_t state) {
 }
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
-    // LM(SHIFT_LAYER , MOD_LSFT)
-    // RSFT_T(KC_HOME)
-    /// TD(SUPER_CTRL)
-    // TD(SUPER_RSHIFT)
-    //TD(SUPER_SHIFT)
+
   // DEFAULT
 	[DEFAULT_LAYER] = LAYOUT(
     KC_ESC,   KC_F1,    KC_F2,    KC_F3,    KC_F4,    KC_F5,    KC_F6,    KC_F7,    KC_F8,    KC_F9,    KC_F10,   KC_F11,   KC_F12,   TD(SUPER_PSCR),  KC_HOME,   KC_INS,
@@ -621,8 +608,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     DP_LSFT,  KC_NUBS,  KC_Z,   KC_X,     KC_C,     KC_V,     KC_B,     KC_N,     KC_M,     KC_COMM,  KC_DOT,   KC_SLSH,  DP_RSFT,       KC_UP,   KC_END,
     KC_LCTL,  KC_LGUI,  KC_LALT,                 KC_SPC,   KC_SPC,   KC_SPC,                KC_RALT,  LT(FN_LAYER_1 ,KC_APP),  TD(SUPER_CTRL),  KC_LEFT,  KC_DOWN,  KC_RGHT
   ),
- // KC_DEL
- //
+
   // GAMING / PLAIN
 	[PLAIN_LAYER] = LAYOUT(
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_PSCR,  _______,  _______,
@@ -668,7 +654,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     _______,  _______,  _______,                      _______,  _______,  _______,                      _______,  _______,  _______,  _______,  _______,   _______
   ),
 
-    // Empty/Testing
+   // Disabled
 	[DISABLED_LAYER] = LAYOUT(
     XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,
     XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,
@@ -691,7 +677,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 	[FN_LAYER_2] = LAYOUT(
     DF(DEFAULT_LAYER),  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  HYPR(KC_INS),
     KC_SLEP ,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,   _______,  _______, _______,  MARKUP_CODE,  XXXXXXX, REMOVE_LINE,  KC_VOLU,
-    _______,  _______,  KC_WH_U,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______, KC_VOLU,  _______,                    KC_VOLD,
+    _______,  _______,  KC_WH_U,  _______,  MEH(KC_F24),  _______,  _______,  _______,  _______,  _______,  _______,  _______, KC_VOLU,  _______,                    KC_VOLD,
     _______,  KC_WH_L,  KC_WH_D,  KC_WH_R,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,                  KC_CALC,             _______ ,
     TG_OSSFT,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______, _______,  _______,  KC_VOLD,  _______,                    KC_MS_UP, _______,
     _______,  KC_RGUI,  _______,                  KC_MPLY,  KC_MPLY,  KC_MPLY,                      _______,  _______,   KC_MSTP,             KC_MPRV, KC_MS_DOWN,KC_MNXT
@@ -701,14 +687,12 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
-  // If console is enabled, it will print the matrix position and status of each key pressed
-
     if(sexy_shift_enabled && record->event.pressed)
         sexy_shift_process(keycode);
 
     if(sweet_caps_enabled && record->event.pressed && keycode != TD(SUPER_CAPS) && keycode != KC_CAPS && sweet_caps_break(keycode) && is_capslock_on()){
             tap_code(KC_CAPS);
-            if(keycode == KC_ESC)   // Wenn Escape gedrückt, nicht weiter prozesieren...
+            if(keycode == KC_ESC)   // Wenn Escape gedrückt, nicht weiter prozessieren...
                 return false;
     }
 
@@ -724,7 +708,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                     register_code(KC_LSFT);
             }
             else if (!record->event.pressed) {
-               if(sexy_shift_enabled){
+               if(sexy_shift_enabled && (sexy_shift_command_keycode == keycode)){
                     sexy_shift_stop();
                     //if(sexy_shift_is_tapped()){
                         //tap_code(KC_HOME);
@@ -738,19 +722,25 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
         case DP_RSFT:
             if (record->event.pressed) {
+
+
                 if(sexy_shift_enabled){
                     sexy_shift_stop();
                     sexy_shift_start(keycode, KC_RSFT, RSHIFT_LAYER);
                 }
                 else
                     register_code(KC_RSFT);
+
             }
             else if (!record->event.pressed) {
-                if(sexy_shift_enabled){
+                if(sexy_shift_enabled && (sexy_shift_command_keycode == keycode)){
                     sexy_shift_stop();
-                    //if(sexy_shift_is_tapped_time(100)){
-                        //tap_code(KC_HOME);
-                    //}
+
+/*
+                    if(sexy_shift_is_tapped_time(75)){
+                        tap_code(KC_HOME);
+                    }
+*/
                     sexy_shift_reset();
                 }
 
@@ -811,7 +801,6 @@ void eeconfig_init_user(void) {  // EEPROM is getting reset!
   user_config.sweet_caps_enabled = true; // We want this enabled by default
   user_config.sexy_shift_enabled = true; // We want this enabled by default
   eeconfig_update_user(user_config.raw); // Write default value to EEPROM now
-
 }
 
 void print_keycode(uint16_t keycode) {
