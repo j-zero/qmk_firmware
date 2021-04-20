@@ -379,6 +379,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         } else {
             unregister_code(KC_CALC);
         }
+        return false;
 
     case DP_CLOSECALC:
         if (record->event.pressed) {
@@ -451,6 +452,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
 void raw_hid_receive( uint8_t *data, uint8_t length )
 {
+    /*
     uint8_t *command_id = &(data[0]);
     uint8_t *command_data = &(data[1]);
     switch ( *command_id )
@@ -572,4 +574,5 @@ void raw_hid_receive( uint8_t *data, uint8_t length )
         }
     }
     raw_hid_send(data,length);
+    */
 }

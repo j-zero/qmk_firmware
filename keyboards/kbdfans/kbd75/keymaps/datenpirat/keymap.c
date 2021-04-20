@@ -131,8 +131,12 @@ const rgblight_segment_t PROGMEM my_caps_layer[] = RGBLIGHT_LAYER_SEGMENTS(
 );
 
 // Autoshift
-const rgblight_segment_t PROGMEM my_acknowledge_layer[] = RGBLIGHT_LAYER_SEGMENTS(
-    { 0, 16, HSV_WHITE}
+const rgblight_segment_t PROGMEM my_acknowledge_layer_on[] = RGBLIGHT_LAYER_SEGMENTS(
+    { 0, 16, HSV_GREEN}
+);
+// Autoshift
+const rgblight_segment_t PROGMEM my_acknowledge_layer_off[] = RGBLIGHT_LAYER_SEGMENTS(
+    { 0, 16, HSV_RED}
 );
 
 
@@ -145,7 +149,8 @@ const rgblight_segment_t* const PROGMEM my_rgb_layers[] = RGBLIGHT_LAYERS_LIST(
     my_layer3_layer,     // Overrides other layers
     my_layer4_layer,     // Overrides other layers
     my_caps_layer,
-    my_acknowledge_layer
+    my_acknowledge_layer_on,
+    my_acknowledge_layer_off
 );
 /*
 void custom_autoshift_set(bool enabled){
@@ -195,7 +200,8 @@ void set_caps(bool enabled){
 void update_eeprom(){
     user_config.sexy_shift_enabled = sexy_shift_enabled;
     user_config.sweet_caps_enabled = sweet_caps_enabled;
-    rgblight_blink_layer(5, 250);
+    rgblight_blink_layer(sexy_shift_enabled ? 5 : 6, 250);
+    rgblight_blink_layer(sweet_caps_enabled ? 5 : 6, 250);
     eeconfig_update_user(user_config.raw); // Writes the new status to EEPROM
 
 }
@@ -527,15 +533,22 @@ void super_CTRL_reset (qk_tap_dance_state_t *state, void *user_data) {
   tap_state.state = 0;
 }
 
+void super_PSCR_start (qk_tap_dance_state_t *state, void *user_data) {
+  if (state->count == 1){
+      layer_on(FUNKY_LAYER);
+  }
+}
+
 void super_PSCR_finished (qk_tap_dance_state_t *state, void *user_data) {
   tap_state.state = get_dance_state(state);
   switch (tap_state.state) {
     case SINGLE_TAP:
-    case SINGLE_HOLD:
         register_code(KC_PSCR);
         break;
+    case SINGLE_HOLD:
+        break;
     case DOUBLE_TAP:
-        register_code(KC_LGUI); tap_code(KC_L); tap_code(KC_MSTP);
+        register_code(KC_LGUI); register_code(KC_LSFT); tap_code(KC_S);
         break;
     default:
         register_code(KC_PSCR);
@@ -546,16 +559,20 @@ void super_PSCR_finished (qk_tap_dance_state_t *state, void *user_data) {
 void super_PSCR_reset (qk_tap_dance_state_t *state, void *user_data) {
   switch (tap_state.state) {
     case SINGLE_TAP:
-    case SINGLE_HOLD:
         unregister_code(KC_PSCR);
         break;
+    case SINGLE_HOLD:
+
+        break;
     case DOUBLE_TAP:
-        unregister_code(KC_LGUI);
+        unregister_code(KC_LSFT);unregister_code(KC_LGUI);
         break;
     default:
-        unregister_code(KC_RCTL);
+        unregister_code(KC_PSCR);
         break;
   }
+    layer_off(FUNKY_LAYER);
+
   tap_state.state = 0;
 }
 
@@ -564,7 +581,7 @@ qk_tap_dance_action_t tap_dance_actions[] = {
     [SUPER_CAPS]        = ACTION_TAP_DANCE_FN_ADVANCED(super_CAPS_start ,super_CAPS_finished, super_CAPS_reset),
     [SUPER_CTRL]        = ACTION_TAP_DANCE_FN_ADVANCED(NULL,super_CTRL_finished, super_CTRL_reset),
     [TD_AKZENT]         = ACTION_TAP_DANCE_FN_ADVANCED(NULL,super_AKZENT_finished, super_AKZENT_reset),
-    [SUPER_PSCR]        = ACTION_TAP_DANCE_FN_ADVANCED(NULL,super_PSCR_finished, super_PSCR_reset),
+    [SUPER_PSCR]        = ACTION_TAP_DANCE_FN_ADVANCED(super_PSCR_start,super_PSCR_finished, super_PSCR_reset),
 };
 
 
@@ -631,7 +648,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     _______,  _______,  _______,                      _______,  _______,  _______,                      _______,  _______,  _______,  _______,  _______,   _______
    ),
 
-// Right Shift Layer
+// Right Shift Layer, enabled with sexy_shift
 
 	[RSHIFT_LAYER] = LAYOUT(
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,
@@ -667,9 +684,9 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 	[FN_LAYER_1] = LAYOUT(
     DF(DEFAULT_LAYER), TG(PLAIN_LAYER), TG(FUNKY_LAYER), _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_PAUS, KC_SLCK , KC_NLCK,
     KC_WAKE,  _______, _______,  _______,  _______, _______,  _______,  KC_PSLS,  KC_PAST,  _______,  KC_NLCK,  _______,  MARKUP_CODE,  XXXXXXX, REMOVE_LINE, KC_ASUP,
-    _______,  RGB_TOG,  RGB_MOD,  RGB_HUI,  RGB_HUD,  RGB_SAI,  RGB_SAD,  RGB_VAI,  RGB_VAD,  _______,  _______,  _______,  KC_PPLS,  KC_MUTE,       KC_ASDN,
+    _______,  RGB_TOG,  RGB_MOD,  RGB_HUI,  RGB_HUD,  RGB_SAI,  RGB_SAD,  RGB_VAI,  RGB_VAD,  _______,  _______,  _______,  KC_VOLU,  KC_MUTE,       KC_ASDN,
     KC_CAPS,  BL_DEC,  BL_INC,  _______,  _______,  _______,  _______,  _______,  _______,  TG(DISABLED_LAYER),  _______,  KC_F20,            KC_PENT,             _______,
-    KC_LSFT,  _______,  KC_BRIU,  KC_BRID,  _______,  _______,  _______,  _______,  _______,  _______,  KC_PDOT,  KC_PMNS,  KC_RSFT,                   KC_PGUP,  KC_ASRP,
+    KC_LSFT,  _______,  KC_BRIU,  KC_BRID,  _______,  _______,  _______,  _______,  _______,  _______,  KC_PDOT,  KC_VOLD,  KC_RSFT,                   KC_PGUP,  KC_ASRP,
     RESET  ,  DEBUG,  _______,                  BL_STEP,  BL_STEP,  BL_STEP,                         _______,  _______,  KC_RGUI,           KC_HOME,   KC_PGDN,  KC_END
   ),
 
@@ -722,20 +739,16 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
         case DP_RSFT:
             if (record->event.pressed) {
-
-
                 if(sexy_shift_enabled){
                     sexy_shift_stop();
                     sexy_shift_start(keycode, KC_RSFT, RSHIFT_LAYER);
                 }
                 else
                     register_code(KC_RSFT);
-
             }
             else if (!record->event.pressed) {
                 if(sexy_shift_enabled && (sexy_shift_command_keycode == keycode)){
                     sexy_shift_stop();
-
 /*
                     if(sexy_shift_is_tapped_time(75)){
                         tap_code(KC_HOME);
