@@ -704,6 +704,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
+     static uint16_t rshift_timer;
+
     if(sexy_shift_enabled && record->event.pressed)
         sexy_shift_process(keycode);
 
@@ -739,6 +741,8 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
         case DP_RSFT:
             if (record->event.pressed) {
+                rshift_timer = timer_read();
+
                 if(sexy_shift_enabled){
                     sexy_shift_stop();
                     sexy_shift_start(keycode, KC_RSFT, RSHIFT_LAYER);
@@ -755,6 +759,9 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                     }
 */
                     sexy_shift_reset();
+                    if (timer_elapsed(rshift_timer) < TAPPING_TERM) {
+                        tap_code(KC_HOME);
+                    }
                 }
 
                 else
@@ -789,16 +796,16 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
         // Shift + Backspace = Del
         case KC_UNSHIFT_DEL:
-        if (record->event.pressed && get_mods() & MOD_BIT(KC_LSHIFT)) {
-            unregister_code(KC_LSFT);
-            register_code(KC_DEL);
-            return false;
-        }
+            if (record->event.pressed && get_mods() & MOD_BIT(KC_LSHIFT)) {
+                unregister_code(KC_LSFT);
+                register_code(KC_DEL);
+                return false;
+            }
             else if (!record->event.pressed) {
             unregister_code(KC_DEL);
             register_code(KC_LSFT);
                 }
-            break;
+        break;
 
     }
 
