@@ -7,7 +7,7 @@ typedef union {
   struct {
     bool     sexy_shift_enabled     :1;
     bool     sweet_caps_enabled     :1;
-    bool     rshift_home_enabled    :1;
+    bool     shift_home_end_enabled :1;
   };
 } user_config_t;
 
@@ -66,7 +66,7 @@ enum custom_keycodes {
 
 static bool sweet_caps_enabled = true;
 static bool sweet_caps_was_enabled = false;
-static bool rshift_home_enabled = true;
+static bool shift_home_end_enabled = true;
 static bool lgui_remaped = false;
 
 static bool lshift_is_pressed = false;
@@ -90,11 +90,10 @@ void sexy_shift_reset(void);
 void sexy_shift_stop(void);
 void sexy_shift_restart(void);
 bool sexy_shift_is_tapped(void);
-bool sexy_shift_is_tapped_time(uint16_t term);
-void sexy_shift_process(uint16_t keycode);
-void sexy_shift_enable(bool enable);
+bool sexy_shift_is_tapped_time(uint16_t);
+void sexy_shift_process(uint16_t);
+void sexy_shift_enable(bool);
 void sexy_shift_toggle(void);
-
 void sweet_caps_toggle(void);
 void rshift_home_toggle(void);
 void ack_signal(bool);
@@ -102,8 +101,8 @@ void ack_signal(bool);
 int get_dance_state (qk_tap_dance_state_t *state);
 
 //for the x tap dance. Put it here so it can be used in any keymap
-void custom_autoshift_set(bool enabled);
-void set_caps(bool enabled);
+void custom_autoshift_set(bool);
+void set_caps(bool);
 
 void update_eeprom(void);
 
@@ -180,7 +179,7 @@ void ack_signal(bool enabled){
 void update_eeprom(){
     user_config.sexy_shift_enabled = sexy_shift_enabled;
     user_config.sweet_caps_enabled = sweet_caps_enabled;
-    user_config.rshift_home_enabled = rshift_home_enabled;
+    user_config.shift_home_end_enabled = shift_home_end_enabled;
     eeconfig_update_user(user_config.raw); // Writes the new status to EEPROM
 }
 
@@ -191,13 +190,13 @@ bool led_update_user(led_t led_state) {
 }
 
 // rshift home
-void rshift_home_enable(bool enabled){
-    rshift_home_enabled = enabled;
+void shift_home_end_enable(bool enabled){
+    shift_home_end_enabled = enabled;
     ack_signal(enabled);
     update_eeprom();
 }
-void rshift_home_toggle(void){
-    rshift_home_enable(!rshift_home_enabled);
+void shift_home_end_toggle(void){
+    shift_home_end_enable(!shift_home_end_enabled);
 }
 
 // lgui enable/remap
@@ -260,7 +259,7 @@ bool sweet_caps_break(uint16_t keycode){
 }
 
 
-
+// sexy shift
 
 void sexy_shift_enable(bool enabled){
     sexy_shift_enabled = enabled;
@@ -306,12 +305,12 @@ void sexy_shift_restart(){
     sexy_shift_start(sexy_shift_command_keycode, sexy_shift_code, sexy_shift_layer);
 }
 
-bool sexy_shift_is_tapped(){
-    return sexy_shift_tapped && timer_elapsed(sexy_shift_tap_timer) < TAPPING_TERM;
-}
-
 bool sexy_shift_is_tapped_time(uint16_t term){
     return sexy_shift_tapped && timer_elapsed(sexy_shift_tap_timer) < term;
+}
+
+bool sexy_shift_is_tapped(){
+    return sexy_shift_is_tapped_time(SEXYSHIFT_TAPPING_TERM);
 }
 
 void sexy_shift_stop(){
@@ -631,7 +630,7 @@ void keyboard_post_init_user(void) {  // Call the keymap level matrix init.
     // Set functions from EEPRROM
     sexy_shift_enabled = user_config.sexy_shift_enabled;
     sweet_caps_enabled = user_config.sweet_caps_enabled;
-    rshift_home_enabled = user_config.rshift_home_enabled;
+    shift_home_end_enabled = user_config.shift_home_end_enabled;
     set_caps_led(false);
 
 }
@@ -749,8 +748,15 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                if(sexy_shift_enabled && (sexy_shift_command_keycode == keycode)){
                     sexy_shift_stop();
                     /*
-                    if(sexy_shift_is_tapped_time(TAPPING_TERM)){
-                        tap_code(KC_HOME);
+                   if(shift_home_end_enabled && sexy_shift_is_tapped()){
+                        if(rshift_is_pressed){  // if RSFT is pressed and LSFT is tapped, simulate LSFT+END
+                            register_code(KC_RSFT);
+                            tap_code(KC_HOME);
+                            unregister_code(KC_RSFT);
+                        }
+                        else{
+                            tap_code(KC_HOME);
+                        }
                     }
                     */
                     sexy_shift_reset();
@@ -775,9 +781,8 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 if(sexy_shift_enabled && (sexy_shift_command_keycode == keycode)){
                     sexy_shift_stop();
 
-
-                    if(rshift_home_enabled && sexy_shift_is_tapped_time(TAPPING_TERM)){
-                        if(lshift_is_pressed){  // Wenn linke Shift noch gedrückt ist, shift und pos1 simulieren
+                    if(shift_home_end_enabled && sexy_shift_is_tapped()){
+                        if(lshift_is_pressed){  // if LSFT is pressed and RSFT is tapped, simulate LSFT+HOME
                             register_code(KC_LSFT);
                             tap_code(KC_HOME);
                             unregister_code(KC_LSFT);
@@ -785,8 +790,8 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                         else{
                             tap_code(KC_HOME);
                         }
-
                     }
+
                     sexy_shift_reset();
                 }
                 else
@@ -871,7 +876,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         // toggle rshift tap home
         case TG_RSFTHM:
             if (record->event.pressed) {
-                rshift_home_toggle();
+                shift_home_end_toggle();
             } else {
 
             }
@@ -899,7 +904,7 @@ void eeconfig_init_user(void) {  // EEPROM is getting reset!
     user_config.raw = 0;
     user_config.sweet_caps_enabled = true; // We want this enabled by default
     user_config.sexy_shift_enabled = true; // We want this enabled by default
-    user_config.rshift_home_enabled = true; // We want this enabled by default
+    user_config.shift_home_end_enabled = false; // We want this enabled by default
     eeconfig_update_user(user_config.raw); // Write default value to EEPROM now
 }
 
