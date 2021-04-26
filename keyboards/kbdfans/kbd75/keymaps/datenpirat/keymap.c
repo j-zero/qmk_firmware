@@ -812,12 +812,12 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 if(!lgui_remaped)
                     register_code(KC_LGUI);
                 else
-                    register_code(KC_SPC);
+                    register_code(KC_LCTL);
             } else {
                 if(!lgui_remaped)
                     unregister_code(KC_LGUI);
                 else
-                    unregister_code(KC_SPC);
+                    unregister_code(KC_LCTL);
             }
             break;
 
