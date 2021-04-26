@@ -4,7 +4,8 @@
 #define RGBLIGHT_LAYERS
 #define RGBLIGHT_LAYER_BLINK
 
-#define TAPPING_TERM    175
-#define SEXYSHIFT_TERM  150
+#define TAPPING_TERM            175
+#define SEXYSHIFT_TERM          150
+#define RGB_ACK_BLINK_TIME      250
 
 //#define NO_ACTION_ONESHOT

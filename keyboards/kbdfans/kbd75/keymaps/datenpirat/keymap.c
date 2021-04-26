@@ -118,13 +118,13 @@ const rgblight_segment_t PROGMEM my_layer1_layer[] = RGBLIGHT_LAYER_SEGMENTS(
 const rgblight_segment_t PROGMEM my_layer2_layer[] = RGBLIGHT_LAYER_SEGMENTS(
     { 0, 16, HSV_PINK}
 );
-const rgblight_segment_t PROGMEM my_layer3_layer[] = RGBLIGHT_LAYER_SEGMENTS(
+const rgblight_segment_t PROGMEM my_fn1_layer[] = RGBLIGHT_LAYER_SEGMENTS(
     { 0, 16, 0, 0, 0},
-    { 10, 1, HSV_BLUE}
+    { 10, 1, HSV_WHITE}
 );
-const rgblight_segment_t PROGMEM my_layer4_layer[] = RGBLIGHT_LAYER_SEGMENTS(
+const rgblight_segment_t PROGMEM my_fn2_layer[] = RGBLIGHT_LAYER_SEGMENTS(
     { 0, 16, 0, 0, 0},
-    { 15, 1, HSV_BLUE}
+    { 15, 1, HSV_WHITE}
 );
 
 // CAPS
@@ -134,7 +134,6 @@ const rgblight_segment_t PROGMEM my_caps_layer[] = RGBLIGHT_LAYER_SEGMENTS(
     { 15, 1, HSV_RED}
 );
 
-
 const rgblight_segment_t PROGMEM my_acknowledge_layer_on[] = RGBLIGHT_LAYER_SEGMENTS(
     { 0, 16, HSV_GREEN}
 );
@@ -143,25 +142,38 @@ const rgblight_segment_t PROGMEM my_acknowledge_layer_off[] = RGBLIGHT_LAYER_SEG
     { 0, 16, HSV_RED}
 );
 
+const rgblight_segment_t PROGMEM my_funky_layer[] = RGBLIGHT_LAYER_SEGMENTS(
+    { 0, 16, 0, 0, 0},
+    { 6, 2, HSV_WHITE}
+);
 
 const rgblight_segment_t* const PROGMEM my_rgb_layers[] = RGBLIGHT_LAYERS_LIST(
     my_layer1_layer,    // Overrides caps lock layer
     my_layer2_layer,     // Overrides other layers
-    my_layer3_layer,     // Overrides other layers
-    my_layer4_layer,     // Overrides other layers
+    my_fn1_layer,     // Overrides other layers
+    my_fn2_layer,     // Overrides other layers
     my_caps_layer,
     my_acknowledge_layer_on,
-    my_acknowledge_layer_off
+    my_acknowledge_layer_off,
+    my_funky_layer
 );
+
+layer_state_t layer_state_set_user(layer_state_t state) {
+    // Both layers will light up if both kb layers are active
+    rgblight_set_layer_state(0, layer_state_cmp(state, DEFAULT_LAYER)); // Normal
+    rgblight_set_layer_state(1, layer_state_cmp(state, PLAIN_LAYER)); // Plain
+    rgblight_set_layer_state(2, layer_state_cmp(state, FN_LAYER_1)); // Fn1
+    rgblight_set_layer_state(3, layer_state_cmp(state, FN_LAYER_2)); // Fn2
+    rgblight_set_layer_state(7, layer_state_cmp(state, FUNKY_LAYER)); // Funky!
+    return state;
+}
 
 void update_eeprom(){
     user_config.sexy_shift_enabled = sexy_shift_enabled;
     user_config.sweet_caps_enabled = sweet_caps_enabled;
     user_config.rshift_home_enabled = rshift_home_enabled;
 
-    rgblight_blink_layer(sexy_shift_enabled ? 5 : 6, 250);
-    rgblight_blink_layer(sweet_caps_enabled ? 5 : 6, 250);
-    rgblight_blink_layer(rshift_home_enabled ? 5 : 6, 250);
+
 
     eeconfig_update_user(user_config.raw); // Writes the new status to EEPROM
 }
@@ -175,6 +187,7 @@ bool led_update_user(led_t led_state) {
 // rshift home
 void rshift_home_enable(bool enabled){
     rshift_home_enabled = enabled;
+    rgblight_blink_layer(enabled ? 5 : 6, RGB_ACK_BLINK_TIME);
     update_eeprom();
 }
 
@@ -185,6 +198,7 @@ void rshift_home_toggle(void){
 // Sweet Caps
 void sweet_caps_enable(bool enabled){
     sweet_caps_enabled = enabled;
+    rgblight_blink_layer(enabled ? 5 : 6, RGB_ACK_BLINK_TIME);
     update_eeprom();
 }
 void sweet_caps_toggle(void){
@@ -234,6 +248,7 @@ bool sweet_caps_break(uint16_t keycode){
 
 void sexy_shift_enable(bool enabled){
     sexy_shift_enabled = enabled;
+    rgblight_blink_layer(enabled ? 5 : 6, RGB_ACK_BLINK_TIME);
     update_eeprom();
 }
 
@@ -545,7 +560,6 @@ void super_PSCR_reset (qk_tap_dance_state_t *state, void *user_data) {
         unregister_code(KC_PSCR);
         break;
     case SINGLE_HOLD:
-
         break;
     case DOUBLE_TAP:
         unregister_code(KC_LSFT);unregister_code(KC_LGUI);
@@ -588,15 +602,7 @@ void keyboard_post_init_user(void) {  // Call the keymap level matrix init.
 
 }
 
-layer_state_t layer_state_set_user(layer_state_t state) {
-    // Both layers will light up if both kb layers are active
-    rgblight_set_layer_state(0, layer_state_cmp(state, DEFAULT_LAYER)); // Normal
-    rgblight_set_layer_state(1, layer_state_cmp(state, PLAIN_LAYER)); // Plain
-    rgblight_set_layer_state(2, layer_state_cmp(state, FN_LAYER_1)); // Fn1
-    rgblight_set_layer_state(3, layer_state_cmp(state, FN_LAYER_2)); // Fn2
 
-    return state;
-}
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
