@@ -93,6 +93,7 @@ void sexy_shift_toggle(void);
 
 void sweet_caps_toggle(void);
 void rshift_home_toggle(void);
+void ack_signal(bool);
 
 int get_dance_state (qk_tap_dance_state_t *state);
 
@@ -168,6 +169,10 @@ layer_state_t layer_state_set_user(layer_state_t state) {
     return state;
 }
 
+void ack_signal(bool enabled){
+    rgblight_blink_layer(enabled ? RGB_ACK_ON_LAYER : RGB_ACK_OFF_LAYER, RGB_ACK_BLINK_TIME);
+}
+
 void update_eeprom(){
     user_config.sexy_shift_enabled = sexy_shift_enabled;
     user_config.sweet_caps_enabled = sweet_caps_enabled;
@@ -187,7 +192,7 @@ bool led_update_user(led_t led_state) {
 // rshift home
 void rshift_home_enable(bool enabled){
     rshift_home_enabled = enabled;
-    rgblight_blink_layer(enabled ? 5 : 6, RGB_ACK_BLINK_TIME);
+    ack_signal(enabled);
     update_eeprom();
 }
 
@@ -198,7 +203,7 @@ void rshift_home_toggle(void){
 // Sweet Caps
 void sweet_caps_enable(bool enabled){
     sweet_caps_enabled = enabled;
-    rgblight_blink_layer(enabled ? 5 : 6, RGB_ACK_BLINK_TIME);
+    ack_signal(enabled);
     update_eeprom();
 }
 void sweet_caps_toggle(void){
@@ -246,9 +251,11 @@ bool sweet_caps_break(uint16_t keycode){
 }
 
 
+
+
 void sexy_shift_enable(bool enabled){
     sexy_shift_enabled = enabled;
-    rgblight_blink_layer(enabled ? 5 : 6, RGB_ACK_BLINK_TIME);
+    ack_signal(enabled);
     update_eeprom();
 }
 
