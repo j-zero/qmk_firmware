@@ -51,21 +51,23 @@ enum {
 };
 
 enum custom_keycodes {
-    AUTOSHIFT_TOGGLE = SAFE_RANGE,
-    MARKUP_CODE,
+    MARKUP_CODE = SAFE_RANGE,
     REMOVE_LINE,
     KC_UNSHIFT_DEL,
     KC_UNSHIFT_HOME,
-    DP_LSFT,
-    DP_RSFT,
-    TG_SESFT,
-    TG_SWCPS,
-    TG_RSFTHM
+    DP_LSFT,    // custom left shift
+    DP_RSFT,    // custom Right Shift
+    DP_LGUI,    // custom KC_LGUI
+    TG_SESFT,   // toggle sexy_shift
+    TG_SWCPS,   // toggle sweet_caps
+    TG_RSFTHM,  // toggle rshift_home
+    TG_LGRM,    // toggle lgui_remap (not eeprom)
 };
 
 static bool sweet_caps_enabled = true;
 static bool sweet_caps_was_enabled = false;
 static bool rshift_home_enabled = true;
+static bool lgui_remaped = false;
 
 static bool sexy_shift_enabled = true;
 static bool sexy_shift_on = false;
@@ -191,9 +193,17 @@ void rshift_home_enable(bool enabled){
     ack_signal(enabled);
     update_eeprom();
 }
-
 void rshift_home_toggle(void){
     rshift_home_enable(!rshift_home_enabled);
+}
+
+// lgui enable/remap
+void lgui_remap(bool enabled){
+    lgui_remaped = enabled;
+    ack_signal(enabled);
+}
+void lgui_remap_toggle(void){
+    lgui_remap(!lgui_remaped);
 }
 
 // Sweet Caps
@@ -623,17 +633,17 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_TAB,   KC_Q,     KC_W,     KC_E,     KC_R,     KC_T,     KC_Y,     KC_U,     KC_I,     KC_O,     KC_P,     KC_LBRC,  KC_RBRC,  KC_BSLS,              KC_PGDN ,
         TD(TD_CAPS),  KC_A,     KC_S,     KC_D,     KC_F,     KC_G,     KC_H,     KC_J,     KC_K,     KC_L,     KC_SCLN,  KC_QUOT,                      KC_ENT,      KC_DEL,
         DP_LSFT,  KC_NUBS,  KC_Z,   KC_X,     KC_C,     KC_V,     KC_B,     KC_N,     KC_M,     KC_COMM,  KC_DOT,   KC_SLSH,  DP_RSFT,       KC_UP,   KC_END,
-        KC_LCTL,  KC_LGUI,  KC_LALT,                 KC_SPC,   KC_SPC,   KC_SPC,                KC_RALT,  LT(FN_LAYER_1 ,KC_APP),  TD(TD_CTRL),  KC_LEFT,  KC_DOWN,  KC_RGHT
+        KC_LCTL,  DP_LGUI,  KC_LALT,                 KC_SPC,   KC_SPC,   KC_SPC,                KC_RALT,  LT(FN_LAYER_1, KC_APP),  TD(TD_CTRL),  KC_LEFT,  KC_DOWN,  KC_RGHT
     ),
 
     // GAMING / PLAIN
 	[PLAIN_LAYER] = LAYOUT(
-        _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_PSCR,  _______,  _______,
-        _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  XXXXXXX,  KC_BSPC, _______,
-        _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            _______,
-        KC_CAPS,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,                      _______,  KC_DEL,
-        KC_LSFT,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_RSFT,            _______,  _______,
-        _______,  _______,  _______,                      _______,  _______,  _______,                      _______,  LT(FN_LAYER_1 ,KC_APP),  _______,  _______,  _______,  _______
+        KC_ESC,   KC_F1,    KC_F2,    KC_F3,    KC_F4,    KC_F5,    KC_F6,    KC_F7,    KC_F8,    KC_F9,    KC_F10,   KC_F11,   KC_F12,   KC_PSCR,  KC_HOME,  KC_INS,
+        KC_GRV,   KC_1,     KC_2,     KC_3,     KC_4,     KC_5,     KC_6,     KC_7,     KC_8,     KC_9,     KC_0,     KC_MINS,  KC_EQL,   XXXXXXX,  KC_BSPC,  KC_PGUP,
+        KC_TAB,   KC_Q,     KC_W,     KC_E,     KC_R,     KC_T,     KC_Y,     KC_U,     KC_I,     KC_O,     KC_P,     KC_LBRC,  KC_RBRC,  KC_BSLS,            KC_PGDN ,
+        KC_CAPS,  KC_A,     KC_S,     KC_D,     KC_F,     KC_G,     KC_H,     KC_J,     KC_K,     KC_L,     KC_SCLN,  KC_QUOT,                      KC_ENT,   KC_DEL,
+        KC_LSFT,  KC_NUBS,  KC_Z,     KC_X,     KC_C,     KC_V,     KC_B,     KC_N,     KC_M,     KC_COMM,  KC_DOT,   KC_SLSH,  KC_RSFT,            KC_UP,    KC_END,
+        KC_LCTL,  DP_LGUI,  KC_LALT,                      KC_SPC,   KC_SPC,   KC_SPC,                       KC_RALT,  _______,  KC_RCTL,  KC_LEFT,  KC_DOWN,  KC_RGHT
     ),
 
     // Shift Layer
@@ -678,7 +688,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
     // Functions I, activated by GUI
 	[FN_LAYER_1] = LAYOUT(
-        DF(DEFAULT_LAYER), TG(PLAIN_LAYER), _______, _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_PAUS, KC_SLCK , KC_NLCK,
+        TO(DEFAULT_LAYER), TG(PLAIN_LAYER), TG(FUNKY_LAYER), _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_PAUS, KC_SLCK , KC_NLCK,
         KC_WAKE,  _______, _______,  _______,  _______, _______,  _______,  KC_PSLS,  KC_PAST,  _______,  KC_NLCK,  _______,  MARKUP_CODE,  XXXXXXX, REMOVE_LINE, KC_ASUP,
         _______,  RGB_TOG,  RGB_MOD,  RGB_HUI,  RGB_HUD,  RGB_SAI,  RGB_SAD,  RGB_VAI,  RGB_VAD,  _______,  _______,  _______,  KC_VOLU,  KC_MUTE,       KC_ASDN,
         KC_CAPS,  BL_DEC,  BL_INC,  BL_STEP,  _______,  _______,  _______,  _______,  _______,  TG(DISABLED_LAYER),  _______,  KC_F20,            KC_PENT,             _______,
@@ -688,7 +698,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
     // Functions II, activated by CAPS LOCK
     [FN_LAYER_2] = LAYOUT(
-        DF(DEFAULT_LAYER),  TG_SESFT,  TG_SWCPS,  TG_RSFTHM,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  HYPR(KC_INS),
+        TO(DEFAULT_LAYER),  TG_SESFT,  TG_SWCPS,  TG_RSFTHM,  TG_LGRM,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  HYPR(KC_INS),
         KC_SLEP ,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,   _______,  _______, _______,  MARKUP_CODE,  XXXXXXX, REMOVE_LINE,  KC_VOLU,
         _______,  _______,  KC_WH_U,  _______,  MEH(KC_F24),  _______,  _______,  _______,  _______,  _______,  _______,  _______, KC_VOLU,  _______,                    KC_VOLD,
         _______,  KC_WH_L,  KC_WH_D,  KC_WH_R,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,                  KC_CALC,             _______ ,
@@ -797,6 +807,20 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             }
             break;
 
+        case DP_LGUI:
+            if (record->event.pressed) {
+                if(!lgui_remaped)
+                    register_code(KC_LGUI);
+                else
+                    register_code(KC_SPC);
+            } else {
+                if(!lgui_remaped)
+                    unregister_code(KC_LGUI);
+                else
+                    unregister_code(KC_SPC);
+            }
+            break;
+
         // toggle sexy shift
         case TG_SESFT:
             if (record->event.pressed) {
@@ -819,6 +843,15 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         case TG_RSFTHM:
             if (record->event.pressed) {
                 rshift_home_toggle();
+            } else {
+
+            }
+            break;
+
+        // toggle lgui remap
+        case TG_LGRM:
+            if (record->event.pressed) {
+                lgui_remap_toggle();
             } else {
 
             }
