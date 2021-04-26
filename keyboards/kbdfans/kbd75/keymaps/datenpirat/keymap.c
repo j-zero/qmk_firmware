@@ -5,8 +5,9 @@
 typedef union {
   uint32_t raw;
   struct {
-    bool     sexy_shift_enabled :1;
-    bool     sweet_caps_enabled :1;
+    bool     sexy_shift_enabled     :1;
+    bool     sweet_caps_enabled     :1;
+    bool     rshift_home_enabled    :1;
   };
 } user_config_t;
 
@@ -63,9 +64,13 @@ enum custom_keycodes {
     TG_OSSFT,
     DP_LSFT,
     DP_RSFT,
+    TG_SESFT,
+    TG_SWCPS,
+    TG_RSFTHM
 };
 
 static bool sweet_caps_enabled = true;
+static bool rshift_home_enabled = true;
 
 static bool sexy_shift_enabled = true;
 static bool sexy_shift_on = false;
@@ -89,6 +94,9 @@ bool sexy_shift_is_tapped_time(uint16_t term);
 void sexy_shift_process(uint16_t keycode);
 void sexy_shift_enable(bool enable);
 void sexy_shift_toggle(void);
+
+void sweet_caps_toggle(void);
+void rshift_home_toggle(void);
 
 int get_dance_state (qk_tap_dance_state_t *state);
 
@@ -130,19 +138,16 @@ const rgblight_segment_t PROGMEM my_caps_layer[] = RGBLIGHT_LAYER_SEGMENTS(
     { 15, 1, HSV_RED}
 );
 
-// Autoshift
+
 const rgblight_segment_t PROGMEM my_acknowledge_layer_on[] = RGBLIGHT_LAYER_SEGMENTS(
     { 0, 16, HSV_GREEN}
 );
-// Autoshift
+
 const rgblight_segment_t PROGMEM my_acknowledge_layer_off[] = RGBLIGHT_LAYER_SEGMENTS(
     { 0, 16, HSV_RED}
 );
 
 
-// etc..
-
-// Now define the array of layers. Later layers take precedence
 const rgblight_segment_t* const PROGMEM my_rgb_layers[] = RGBLIGHT_LAYERS_LIST(
     my_layer1_layer,    // Overrides caps lock layer
     my_layer2_layer,     // Overrides other layers
@@ -152,58 +157,20 @@ const rgblight_segment_t* const PROGMEM my_rgb_layers[] = RGBLIGHT_LAYERS_LIST(
     my_acknowledge_layer_on,
     my_acknowledge_layer_off
 );
-/*
-void custom_autoshift_set(bool enabled){
-    autoshift_enabled = enabled;
-    writePin(B2, !enabled);
-    rgblight_set_layer_state(5, autoshift_enabled); // Autoshift LAYER
-
-    if (enabled)
-        autoshift_enable();
-    else
-        autoshift_disable();
-
-    update_eeprom();
-}
-
-void custom_autoshift_toggle(void){
-        custom_autoshift_set(!autoshift_enabled);
-}
-
-void custom_oneshot_shift_set(bool enabled){
-    one_shot_shift_enabled = enabled;
-    update_eeprom();
-}
-
-void custom_oneshot_shift_toggle(void){
-        custom_oneshot_shift_set(!one_shot_shift_enabled);
-
-}
-*/
-
-void set_caps(bool enabled){
-    if(is_capslock_on()){
-        if(!enabled){
-            //tap_code(KC_CAPS);
-        }
-    }
-    else{
-        if(enabled){
-            //tap_code(KC_CAPS);
-        }
-
-    }
-}
-
-
 
 void update_eeprom(){
     user_config.sexy_shift_enabled = sexy_shift_enabled;
     user_config.sweet_caps_enabled = sweet_caps_enabled;
-    rgblight_blink_layer(sexy_shift_enabled ? 5 : 6, 250);
-    rgblight_blink_layer(sweet_caps_enabled ? 5 : 6, 250);
-    eeconfig_update_user(user_config.raw); // Writes the new status to EEPROM
+    user_config.rshift_home_enabled = rshift_home_enabled;
 
+    rgblight_blink_layer(sexy_shift_enabled ? 5 : 6, 100);
+    rgblight_blink_layer(0, 100);
+    rgblight_blink_layer(sweet_caps_enabled ? 5 : 6, 100);
+    rgblight_blink_layer(0, 100);
+    rgblight_blink_layer(rshift_home_enabled ? 5 : 6, 100);
+    rgblight_blink_layer(0, 100);
+
+    eeconfig_update_user(user_config.raw); // Writes the new status to EEPROM
 }
 
 bool led_update_user(led_t led_state) {
@@ -211,6 +178,18 @@ bool led_update_user(led_t led_state) {
     set_caps_led(led_state.caps_lock || sexy_shift_on);
     return true;
 }
+
+// rshift home
+void rshift_home_enable(bool enabled){
+    rshift_home_enabled = enabled;
+    update_eeprom();
+}
+
+void rshift_home_toggle(void){
+    rshift_home_enable(!rshift_home_enabled);
+}
+
+// Sweet Caps
 void sweet_caps_enable(bool enabled){
     sweet_caps_enabled = enabled;
     update_eeprom();
@@ -218,6 +197,7 @@ void sweet_caps_enable(bool enabled){
 void sweet_caps_toggle(void){
     sweet_caps_enable(!sweet_caps_enabled);
 }
+
 bool sweet_caps_break(uint16_t keycode){
     switch(keycode){  // Keycodes die CAPS nicht deaktivieren.
         case KC_A:
@@ -263,19 +243,21 @@ void sexy_shift_enable(bool enabled){
     sexy_shift_enabled = enabled;
     update_eeprom();
 }
+
 void sexy_shift_toggle(void){
     sexy_shift_enable(!sexy_shift_enabled);
 }
+
 void sexy_shift_start_oneshot(uint16_t command_keycode, uint16_t code, uint16_t layer){
     sexy_shift_start(command_keycode,code,layer);
     sexy_shift_oneshot = true;
 }
+
 void sexy_shift_start(uint16_t command_keycode, uint16_t code, uint16_t layer){
     sexy_shift_layer = layer;
     sexy_shift_code = code;
     sexy_shift_command_keycode = command_keycode;
     layer_on(sexy_shift_layer);
-    //autoshift_enable();
     register_mods(MOD_BIT(sexy_shift_code));
     set_caps_led(true);
     sexy_shift_on = true;
@@ -284,26 +266,31 @@ void sexy_shift_start(uint16_t command_keycode, uint16_t code, uint16_t layer){
     sexy_shift_tap_timer = timer_read();
     sexy_shift_oneshot = false;
 }
+
 void sexy_shift_restart(){
     sexy_shift_start(sexy_shift_command_keycode, sexy_shift_code, sexy_shift_layer);
 }
+
 bool sexy_shift_is_tapped(){
     return sexy_shift_tapped && timer_elapsed(sexy_shift_tap_timer) < TAPPING_TERM;
 }
+
 bool sexy_shift_is_tapped_time(uint16_t term){
     return sexy_shift_tapped && timer_elapsed(sexy_shift_tap_timer) < term;
 }
+
 void sexy_shift_stop(){
     unregister_mods(MOD_BIT(sexy_shift_code));
     set_caps_led(false);
     layer_off(sexy_shift_layer);
     sexy_shift_on = false;
 }
+
 void sexy_shift_reset(){
     sexy_shift_tapped = false;
     sexy_shift_oneshot = false;
-    //autoshift_disable();
 }
+
 bool sexy_shift_ignore(uint16_t keycode){
     switch(keycode){  // Keycodes die Sexy Shift nicht stoppen.
         case DP_LSFT:
@@ -318,14 +305,15 @@ bool sexy_shift_ignore(uint16_t keycode){
         case KC_COMM:
         case KC_DOT:
         case KC_SLSH:
-
             return true;
     }
     return false;
 }
-void sexy_shift_post_process(uint16_t keycode){
 
+void sexy_shift_post_process(uint16_t keycode){
+    // todo
 }
+
 void sexy_shift_process(uint16_t keycode){
 
     if(!sexy_shift_ignore(keycode)){
@@ -337,15 +325,17 @@ void sexy_shift_process(uint16_t keycode){
             if(timer_elapsed(sexy_shift_tap_timer) < SEXYSHIFT_TERM)
                 sexy_shift_stop();
             else{
-                //autoshift_disable();
                 set_caps_led(false);
             }
         }
-        else if(keycode != sexy_shift_command_keycode){
-            sexy_shift_tapped = false;
-        }
+
         sexy_shift_last_keycode = keycode;
     }
+
+    // if any key but the sexy_shift start key is pressed interrupt "tapped" mode
+    if(keycode != sexy_shift_command_keycode)
+        sexy_shift_tapped = false;
+
     sexy_shift_oneshot = false;
 }
 
@@ -644,7 +634,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  XXXXXXX,  KC_UNSHIFT_DEL, _______,
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            _______,
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,                      _______,  _______,
-    _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_HOME,            _______,  _______,
+    _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            _______,  _______,
     _______,  _______,  _______,                      _______,  _______,  _______,                      _______,  _______,  _______,  _______,  _______,   _______
    ),
 
@@ -655,7 +645,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  XXXXXXX,  _______,  _______,
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            _______,
      KC_ENT,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,                      _______,  _______,
-    _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            _______,  _______,
+    _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            _______,  KC_UNSHIFT_HOME,
     _______,  _______,  _______,                      _______,  _______,  _______,                      _______,  _______,  _______,  _______,  _______,  _______
    ),
 
@@ -692,19 +682,17 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
     // Functions II, activated by CAPS LOCK
 	[FN_LAYER_2] = LAYOUT(
-    DF(DEFAULT_LAYER),  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  HYPR(KC_INS),
+    DF(DEFAULT_LAYER),  TG_SESFT,  TG_SWCPS,  TG_RSFTHM,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  HYPR(KC_INS),
     KC_SLEP ,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,   _______,  _______, _______,  MARKUP_CODE,  XXXXXXX, REMOVE_LINE,  KC_VOLU,
     _______,  _______,  KC_WH_U,  _______,  MEH(KC_F24),  _______,  _______,  _______,  _______,  _______,  _______,  _______, KC_VOLU,  _______,                    KC_VOLD,
     _______,  KC_WH_L,  KC_WH_D,  KC_WH_R,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,                  KC_CALC,             _______ ,
-    TG_OSSFT,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______, _______,  _______,  KC_VOLD,  _______,                    KC_MS_UP, _______,
+    _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______, _______,  _______,  KC_VOLD,  _______,                    KC_MS_UP, _______,
     _______,  KC_RGUI,  _______,                  KC_MPLY,  KC_MPLY,  KC_MPLY,                      _______,  _______,   KC_MSTP,             KC_MPRV, KC_MS_DOWN,KC_MNXT
   ),
 
 };
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
-
-     static uint16_t rshift_timer;
 
     if(sexy_shift_enabled && record->event.pressed)
         sexy_shift_process(keycode);
@@ -714,10 +702,8 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             if(keycode == KC_ESC)   // Wenn Escape gedrückt, nicht weiter prozessieren...
                 return false;
     }
-
     switch (keycode) {
-
-        case DP_LSFT:
+        case DP_LSFT:   // custom left shift
             if (record->event.pressed) {
                 if(sexy_shift_enabled){
                     sexy_shift_stop();
@@ -729,9 +715,11 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             else if (!record->event.pressed) {
                if(sexy_shift_enabled && (sexy_shift_command_keycode == keycode)){
                     sexy_shift_stop();
-                    //if(sexy_shift_is_tapped()){
-                        //tap_code(KC_HOME);
-                    //}
+                    /*
+                    if(sexy_shift_is_tapped_time(TAPPING_TERM)){
+                        tap_code(KC_HOME);
+                    }
+                    */
                     sexy_shift_reset();
                 }
                 else
@@ -739,10 +727,8 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             }
             break;
 
-        case DP_RSFT:
+        case DP_RSFT:   // custom right shift
             if (record->event.pressed) {
-                rshift_timer = timer_read();
-
                 if(sexy_shift_enabled){
                     sexy_shift_stop();
                     sexy_shift_start(keycode, KC_RSFT, RSHIFT_LAYER);
@@ -752,50 +738,31 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             }
             else if (!record->event.pressed) {
                 if(sexy_shift_enabled && (sexy_shift_command_keycode == keycode)){
-
                     sexy_shift_stop();
-
-                    if (timer_elapsed(rshift_timer) < TAPPING_TERM) {
+                    if(rshift_home_enabled && sexy_shift_is_tapped_time(TAPPING_TERM))
                         tap_code(KC_HOME);
-                    }
-/*
-                    if(sexy_shift_is_tapped_time(75)){
-                        tap_code(KC_HOME);
-                    }
-*/
                     sexy_shift_reset();
-
                 }
-
                 else
                     unregister_code(KC_RSFT);
             }
             break;
 
-
         case MARKUP_CODE:
-        if (record->event.pressed) {
-            SEND_STRING("+ + + ");
-        } else {
+            if (record->event.pressed) {
+                SEND_STRING("+ + + ");
+            } else {
 
-        }
-        break;
-
-        case TG_OSSFT:
-        if (record->event.pressed) {
-
-        } else {
-
-        }
-        break;
+            }
+            break;
 
         case REMOVE_LINE:
-        if (record->event.pressed) {
-            tap_code(KC_END); register_code(KC_LSFT); tap_code(KC_HOME); unregister_code(KC_LSFT); tap_code(KC_DEL);
-        } else {
+            if (record->event.pressed) {
+                tap_code(KC_END); register_code(KC_LSFT); tap_code(KC_HOME); unregister_code(KC_LSFT); tap_code(KC_DEL);
+            } else {
 
-        }
-        break;
+            }
+            break;
 
         // Shift + Backspace = Del
         case KC_UNSHIFT_DEL:
@@ -805,10 +772,50 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 return false;
             }
             else if (!record->event.pressed) {
-            unregister_code(KC_DEL);
-            register_code(KC_LSFT);
-                }
-        break;
+                unregister_code(KC_DEL);
+                register_code(KC_LSFT);
+            }
+            break;
+
+        // R_Shift + End = Home
+        case KC_UNSHIFT_HOME:
+            if (record->event.pressed && get_mods() & MOD_BIT(KC_RSHIFT)) {
+                unregister_code(KC_RSFT);
+                register_code(KC_HOME);
+                return false;
+            }
+            else if (!record->event.pressed) {
+                unregister_code(KC_HOME);
+                register_code(KC_RSFT);
+            }
+            break;
+
+        // toggle sexy shift
+        case TG_SESFT:
+            if (record->event.pressed) {
+                sexy_shift_toggle();
+            } else {
+
+            }
+            break;
+
+        // toggle sweet caps
+        case TG_SWCPS:
+            if (record->event.pressed) {
+                sweet_caps_toggle();
+            } else {
+
+            }
+            break;
+
+        // toggle rshift tap home
+        case TG_RSFTHM:
+            if (record->event.pressed) {
+                rshift_home_toggle();
+            } else {
+
+            }
+            break;
 
     }
 
@@ -820,10 +827,11 @@ void post_process_record_user(uint16_t keycode, keyrecord_t *record){
 }
 
 void eeconfig_init_user(void) {  // EEPROM is getting reset!
-  user_config.raw = 0;
-  user_config.sweet_caps_enabled = true; // We want this enabled by default
-  user_config.sexy_shift_enabled = true; // We want this enabled by default
-  eeconfig_update_user(user_config.raw); // Write default value to EEPROM now
+    user_config.raw = 0;
+    user_config.sweet_caps_enabled = true; // We want this enabled by default
+    user_config.sexy_shift_enabled = true; // We want this enabled by default
+    user_config.rshift_home_enabled = true; // We want this enabled by default
+    eeconfig_update_user(user_config.raw); // Write default value to EEPROM now
 }
 
 void print_keycode(uint16_t keycode) {
