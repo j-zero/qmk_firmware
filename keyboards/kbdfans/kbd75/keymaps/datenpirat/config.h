@@ -7,7 +7,7 @@
 #define TAPPING_TERM            175
 #define SEXYSHIFT_TERM          150
 #define SEXYSHIFT_TAPPING_TERM  125
-#define RGB_ACK_BLINK_TIME      250
+#define RGB_ACK_BLINK_TIME      500
 #define RGB_ACK_ON_LAYER        5
 #define RGB_ACK_OFF_LAYER       6
 
