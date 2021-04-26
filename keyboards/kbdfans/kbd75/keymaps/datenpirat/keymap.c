@@ -56,8 +56,6 @@ enum custom_keycodes {
     REMOVE_LINE,
     KC_UNSHIFT_DEL,
     KC_UNSHIFT_HOME,
-    DOUBLE_SPACE,
-    TG_OSSFT,
     DP_LSFT,
     DP_RSFT,
     TG_SESFT,
@@ -66,6 +64,7 @@ enum custom_keycodes {
 };
 
 static bool sweet_caps_enabled = true;
+static bool sweet_caps_was_enabled = false;
 static bool rshift_home_enabled = true;
 
 static bool sexy_shift_enabled = true;
@@ -177,14 +176,11 @@ void update_eeprom(){
     user_config.sexy_shift_enabled = sexy_shift_enabled;
     user_config.sweet_caps_enabled = sweet_caps_enabled;
     user_config.rshift_home_enabled = rshift_home_enabled;
-
-
-
     eeconfig_update_user(user_config.raw); // Writes the new status to EEPROM
 }
 
 bool led_update_user(led_t led_state) {
-    rgblight_set_layer_state(4, led_state.caps_lock); // CAPS LAYER
+    //rgblight_set_layer_state(4, led_state.caps_lock); // CAPS LAYER
     set_caps_led(led_state.caps_lock || sexy_shift_on);
     return true;
 }
@@ -307,7 +303,7 @@ void sexy_shift_reset(){
 }
 
 bool sexy_shift_ignore(uint16_t keycode){
-    switch(keycode){  // Keycodes die Sexy Shift nicht stoppen.
+    switch(keycode){  // Keycodes that won't stop sexy_shift
         case DP_LSFT:
         case DP_RSFT:
         case KC_1:
@@ -446,16 +442,23 @@ void super_CAPS_finished (qk_tap_dance_state_t *state, void *user_data) {
 
   switch (tap_state.state) {
     case SINGLE_TAP:
+        if(!sweet_caps_enabled && sweet_caps_was_enabled){  // enable sweet_caps when is enabled but not active
+            sweet_caps_was_enabled = false;
+            sweet_caps_enabled = true;
+        }
         register_code(KC_CAPS);
         break;
     case SINGLE_HOLD:
         layer_on(FN_LAYER_2);
         break;
     case DOUBLE_TAP:
-        sexy_shift_toggle();
+        if(sweet_caps_enabled){     // disable sweet_caps temporarily until next single tap
+            sweet_caps_was_enabled = true;
+            sweet_caps_enabled = false;
+        }
+        register_code(KC_CAPS);
         break;
     case DOUBLE_HOLD:
-        sweet_caps_toggle();
         break;
     case DOUBLE_SINGLE_TAP:
         break;
@@ -473,6 +476,7 @@ void super_CAPS_reset (qk_tap_dance_state_t *state, void *user_data) {
     case SINGLE_HOLD:
         break;
     case DOUBLE_TAP:
+        unregister_code(KC_CAPS);
         break;
     case DOUBLE_HOLD:
         break;
@@ -486,7 +490,6 @@ void super_CAPS_reset (qk_tap_dance_state_t *state, void *user_data) {
   }
 
   layer_off(FN_LAYER_2);
-
   tap_state.state = 0;
 }
 
@@ -630,9 +633,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            _______,
         KC_CAPS,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,                      _______,  KC_DEL,
         KC_LSFT,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_RSFT,            _______,  _______,
-        _______,  _______,  _______,                      _______,  _______,  _______,                      _______,  _______,  _______,  _______,  _______,  _______
+        _______,  _______,  _______,                      _______,  _______,  _______,                      _______,  LT(FN_LAYER_1 ,KC_APP),  _______,  _______,  _______,  _______
     ),
-
 
     // Shift Layer
 	[SHIFT_LAYER] = LAYOUT(
@@ -644,7 +646,6 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         _______,  _______,  _______,                      _______,  _______,  _______,                      _______,  _______,  _______,  _______,  _______,   _______
     ),
 
-
     // Right Shift Layer, enabled with sexy_shift
 	[RSHIFT_LAYER] = LAYOUT(
         _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,
@@ -654,8 +655,6 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            _______,  KC_UNSHIFT_HOME,
         _______,  _______,  _______,                      _______,  _______,  _______,                      _______,  _______,  _______,  _______,  _______,  _______
     ),
-
-
 
     // Funky Layer
 	[FUNKY_LAYER] = LAYOUT(
@@ -679,7 +678,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
     // Functions I, activated by GUI
 	[FN_LAYER_1] = LAYOUT(
-        DF(DEFAULT_LAYER), TG(PLAIN_LAYER), TG(FUNKY_LAYER), _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_PAUS, KC_SLCK , KC_NLCK,
+        DF(DEFAULT_LAYER), TG(PLAIN_LAYER), _______, _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_PAUS, KC_SLCK , KC_NLCK,
         KC_WAKE,  _______, _______,  _______,  _______, _______,  _______,  KC_PSLS,  KC_PAST,  _______,  KC_NLCK,  _______,  MARKUP_CODE,  XXXXXXX, REMOVE_LINE, KC_ASUP,
         _______,  RGB_TOG,  RGB_MOD,  RGB_HUI,  RGB_HUD,  RGB_SAI,  RGB_SAD,  RGB_VAI,  RGB_VAD,  _______,  _______,  _______,  KC_VOLU,  KC_MUTE,       KC_ASDN,
         KC_CAPS,  BL_DEC,  BL_INC,  BL_STEP,  _______,  _______,  _______,  _______,  _______,  TG(DISABLED_LAYER),  _______,  KC_F20,            KC_PENT,             _______,
@@ -709,6 +708,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             if(keycode == KC_ESC)   // Wenn Escape gedrückt, nicht weiter prozessieren...
                 return false;
     }
+
     switch (keycode) {
         case DP_LSFT:   // custom left shift
             if (record->event.pressed) {
