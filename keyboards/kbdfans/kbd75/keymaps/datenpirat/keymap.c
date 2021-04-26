@@ -69,6 +69,9 @@ static bool sweet_caps_was_enabled = false;
 static bool rshift_home_enabled = true;
 static bool lgui_remaped = false;
 
+static bool lshift_is_pressed = false;
+static bool rshift_is_pressed = false;
+
 static bool sexy_shift_enabled = true;
 static bool sexy_shift_on = false;
 static bool sexy_shift_tapped = false;
@@ -265,6 +268,17 @@ void sexy_shift_enable(bool enabled){
     update_eeprom();
 }
 
+void sexy_shift_led_set(bool enabled){
+    set_caps_led(enabled);
+    /*
+    if(enabled)
+        backlight_enable();
+    else
+        backlight_disable();
+    */
+
+}
+
 void sexy_shift_toggle(void){
     sexy_shift_enable(!sexy_shift_enabled);
 }
@@ -280,7 +294,7 @@ void sexy_shift_start(uint16_t command_keycode, uint16_t code, uint16_t layer){
     sexy_shift_command_keycode = command_keycode;
     layer_on(sexy_shift_layer);
     register_mods(MOD_BIT(sexy_shift_code));
-    set_caps_led(true);
+    sexy_shift_led_set(true);
     sexy_shift_on = true;
     sexy_shift_tapped = true;
     sexy_shift_last_keycode = 0;        // reset last keycode
@@ -302,7 +316,7 @@ bool sexy_shift_is_tapped_time(uint16_t term){
 
 void sexy_shift_stop(){
     unregister_mods(MOD_BIT(sexy_shift_code));
-    set_caps_led(false);
+    sexy_shift_led_set(false);
     layer_off(sexy_shift_layer);
     sexy_shift_on = false;
 }
@@ -722,6 +736,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     switch (keycode) {
         case DP_LSFT:   // custom left shift
             if (record->event.pressed) {
+                lshift_is_pressed = true;
                 if(sexy_shift_enabled){
                     sexy_shift_stop();
                     sexy_shift_start(keycode, KC_LSFT, SHIFT_LAYER);
@@ -730,6 +745,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                     register_code(KC_LSFT);
             }
             else if (!record->event.pressed) {
+                lshift_is_pressed = false;
                if(sexy_shift_enabled && (sexy_shift_command_keycode == keycode)){
                     sexy_shift_stop();
                     /*
@@ -746,6 +762,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
         case DP_RSFT:   // custom right shift
             if (record->event.pressed) {
+                rshift_is_pressed = true;
                 if(sexy_shift_enabled){
                     sexy_shift_stop();
                     sexy_shift_start(keycode, KC_RSFT, RSHIFT_LAYER);
@@ -754,10 +771,22 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                     register_code(KC_RSFT);
             }
             else if (!record->event.pressed) {
+                rshift_is_pressed = false;
                 if(sexy_shift_enabled && (sexy_shift_command_keycode == keycode)){
                     sexy_shift_stop();
-                    if(rshift_home_enabled && sexy_shift_is_tapped_time(TAPPING_TERM))
-                        tap_code(KC_HOME);
+
+
+                    if(rshift_home_enabled && sexy_shift_is_tapped_time(TAPPING_TERM)){
+                        if(lshift_is_pressed){  // Wenn linke Shift noch gedrückt ist, shift und pos1 simulieren
+                            register_code(KC_LSFT);
+                            tap_code(KC_HOME);
+                            unregister_code(KC_LSFT);
+                        }
+                        else{
+                            tap_code(KC_HOME);
+                        }
+
+                    }
                     sexy_shift_reset();
                 }
                 else
