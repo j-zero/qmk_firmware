@@ -68,6 +68,25 @@ enum custom_keycodes {
     TG_LGRM,    // toggle lgui_remap (not eeprom)
 };
 
+enum RAW_COMMAND_ID
+{
+    RAW_COMMAND_GET_PROTOCOL_VERSION=0x01,
+
+    RAW_COMMAND_RGBLIGHT_SETRGB=0xC0,
+    RAW_COMMAND_RGBLIGHT_SETHSV=0xC1,
+    RAW_COMMAND_RGBLIGHT_STEP=0xC2,
+    RAW_COMMAND_RGBLIGHT_SET=0xC3,
+    RAW_COMMAND_RGBLIGHT_ENABLE=0xC4,
+    RAW_COMMAND_RGBLIGHT_DISABLE=0xC5,
+
+    RAW_COMMAND_LAYER_INVERT=0xB1,
+    RAW_COMMAND_LAYER_ON=0xB2,
+    RAW_COMMAND_LAYER_OFF=0xB3,
+    RAW_COMMAND_LAYER_REPORT=0xB0,
+    RAW_COMMAND_UNDEFINED=0xff,
+};
+
+
 static bool sweet_caps_enabled = true;
 static bool sweet_caps_was_enabled = false;
 static bool shift_home_end_enabled = true;
@@ -922,7 +941,7 @@ void print_keycode(uint16_t keycode) {
 
 void raw_hid_receive( uint8_t *data, uint8_t length )
 {
-    /*
+
     uint8_t *command_id = &(data[0]);
     uint8_t *command_data = &(data[1]);
     switch ( *command_id )
@@ -1044,5 +1063,5 @@ void raw_hid_receive( uint8_t *data, uint8_t length )
         }
     }
     raw_hid_send(data,length);
-    */
+
 }
