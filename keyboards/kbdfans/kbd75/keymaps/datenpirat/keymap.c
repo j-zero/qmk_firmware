@@ -269,7 +269,7 @@ void sexy_shift_enable(bool enabled){
 void sexy_shift_led_set(bool enabled){
     set_caps_led(enabled);
     /*
-    if(enabled)
+    if(!enabled)
         backlight_enable();
     else
         backlight_disable();
@@ -719,6 +719,16 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 };
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+
+
+    /* button test
+    if (record->event.pressed){
+        rgblight_enable_noeeprom();
+        rgblight_increase_hue_noeeprom();
+    }
+    else
+        rgblight_disable_noeeprom();
+    */
 
     if(sexy_shift_enabled && record->event.pressed)
         sexy_shift_process(keycode);
