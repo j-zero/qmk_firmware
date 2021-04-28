@@ -1,5 +1,10 @@
 #include QMK_KEYBOARD_H
 
+#include "raw_hid.h"
+
+#define PROTOCOL_VERSION 0x01
+#define SUCCESS 0x01
+#define FAILED 0xff
 
 typedef union {
   uint32_t raw;
@@ -89,20 +94,14 @@ void sexy_shift_reset(void);
 void sexy_shift_stop(void);
 void sexy_shift_restart(void);
 bool sexy_shift_is_tapped(void);
-bool sexy_shift_is_tapped_time(uint16_t);
+bool sexy_shift_is_tapped_time(uint16_t,uint16_t);
 void sexy_shift_process(uint16_t);
 void sexy_shift_enable(bool);
 void sexy_shift_toggle(void);
 void sweet_caps_toggle(void);
 void rshift_home_toggle(void);
 void ack_signal(bool);
-
 int get_dance_state (qk_tap_dance_state_t *state);
-
-//for the x tap dance. Put it here so it can be used in any keymap
-void custom_autoshift_set(bool);
-void set_caps(bool);
-
 void update_eeprom(void);
 
 void set_caps_led(bool enabled){
@@ -304,12 +303,12 @@ void sexy_shift_restart(){
     sexy_shift_start(sexy_shift_command_keycode, sexy_shift_code, sexy_shift_layer);
 }
 
-bool sexy_shift_is_tapped_time(uint16_t term){
-    return sexy_shift_tapped && timer_elapsed(sexy_shift_tap_timer) < term;
+bool sexy_shift_is_tapped_time(uint16_t min_term,uint16_t max_term){
+    return sexy_shift_tapped && timer_elapsed(sexy_shift_tap_timer) < max_term && timer_elapsed(sexy_shift_tap_timer) > min_term;
 }
 
 bool sexy_shift_is_tapped(){
-    return sexy_shift_is_tapped_time(SEXYSHIFT_TAPPING_TERM);
+    return sexy_shift_is_tapped_time(SEXYSHIFT_TAPPING_MIN_TERM, SEXYSHIFT_TAPPING_MAX_TERM);
 }
 
 void sexy_shift_stop(){
@@ -681,7 +680,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,
         _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  XXXXXXX,  _______, _______,
         _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,      _______,
-        _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,                      _______,  _______,
+        _______,  _______,  _______,  _______,  _______,  _______,  KC_LEFT,  KC_DOWN,  KC_UP,    KC_RGHT,  _______,  _______,                      _______,  _______,
         _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            KC_K,  _______,
         _______,  _______,  _______,                      _______,  _______,  _______,                      _______,  _______,  _______,  KC_H,  KC_J,   KC_L
     ),
@@ -919,4 +918,131 @@ void print_keycode(uint16_t keycode) {
     char display[8];
     snprintf(display, 8, "\n%d\n", keycode);
     send_string((const char *)display);
+}
+
+void raw_hid_receive( uint8_t *data, uint8_t length )
+{
+    /*
+    uint8_t *command_id = &(data[0]);
+    uint8_t *command_data = &(data[1]);
+    switch ( *command_id )
+    {
+        case RAW_COMMAND_GET_PROTOCOL_VERSION:
+        {
+            command_data[0]=0x01;
+            command_data[1]=PROTOCOL_VERSION;
+            break;
+        }
+        case RAW_COMMAND_RGBLIGHT_SETHSV:
+        {
+            if(command_data[0] != 3 )
+            {
+                command_data[0]=0x01;
+                command_data[1]=FAILED;
+            }
+            else
+            {
+                rgblight_sethsv(command_data[1], command_data[2], command_data[3]);
+                command_data[0]=0x04;
+                command_data[4]=SUCCESS;
+            }
+            break;
+        }
+        case RAW_COMMAND_RGBLIGHT_SETRGB:
+        {
+            if(command_data[0] != 3 )
+            {
+                command_data[0]=0x01;
+                command_data[1]=FAILED;
+            }
+            else
+            {
+                rgblight_setrgb(command_data[1], command_data[2], command_data[3]);
+                command_data[0]=0x04;
+                command_data[4]=SUCCESS;
+            }
+            break;
+        }
+        case RAW_COMMAND_RGBLIGHT_STEP:
+        {
+            rgblight_step();
+            command_data[0]=0x03;
+            command_data[1]=rgblight_is_enabled();
+            command_data[2]=rgblight_get_mode();
+            command_data[3]=SUCCESS;
+            break;
+        }
+        case RAW_COMMAND_RGBLIGHT_SET:
+        {
+            rgblight_mode(command_data[1]);
+            command_data[0]=0x03;
+            command_data[1]=rgblight_is_enabled();
+            command_data[2]=rgblight_get_mode();
+            command_data[3]=SUCCESS;
+            break;
+        }
+        case RAW_COMMAND_RGBLIGHT_ENABLE:
+        {
+            rgblight_enable();
+            command_data[0]=0x03;
+            command_data[1]=rgblight_is_enabled();
+            command_data[2]=rgblight_get_mode();
+            command_data[3]=SUCCESS;
+            break;
+        }
+        case RAW_COMMAND_RGBLIGHT_DISABLE:
+        {
+            rgblight_disable();
+            command_data[0]=0x03;
+            command_data[1]=rgblight_is_enabled();
+            command_data[2]=rgblight_get_mode();
+            command_data[3]=SUCCESS;
+            break;
+        }
+        case RAW_COMMAND_LAYER_REPORT:
+        {
+            command_data[0]=0x01;
+            command_data[1]=biton32(layer_state);
+            break;
+        }
+        case RAW_COMMAND_LAYER_INVERT:
+        case RAW_COMMAND_LAYER_ON:
+        case RAW_COMMAND_LAYER_OFF:
+        {
+
+            command_data[0]=0x02;   // length
+
+            uint8_t new_layer = command_data[1];
+
+            if(*command_id == RAW_COMMAND_LAYER_INVERT)
+                layer_invert(new_layer);
+            else if(*command_id == RAW_COMMAND_LAYER_ON)
+                layer_on(new_layer);
+            else if(*command_id == RAW_COMMAND_LAYER_OFF)
+                layer_off(new_layer);
+
+
+            command_data[1]=biton32(layer_state);
+
+            if(biton32(layer_state) == new_layer)
+                command_data[2]=SUCCESS;
+            else{
+                //command_data[1] = *command_id;
+                command_data[2]=FAILED;
+            }
+
+            *command_id=RAW_COMMAND_LAYER_REPORT;
+
+            break;
+        }
+        default: //0xff ...
+        {
+            *command_id=RAW_COMMAND_UNDEFINED;
+            command_data[0]=0x01;
+            command_data[1]=FAILED;
+            break;
+        }
+    }
+    raw_hid_send(data,length);
+    */
 }
