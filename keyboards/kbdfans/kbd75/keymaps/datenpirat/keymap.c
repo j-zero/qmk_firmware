@@ -92,6 +92,9 @@ static bool sweet_caps_was_enabled = false;
 static bool shift_home_end_enabled = true;
 static bool lgui_remaped = false;
 
+static bool caps_first_press = false;
+static bool caps_alt_was_registered = false;
+
 static bool lshift_is_pressed = false;
 static bool rshift_is_pressed = false;
 
@@ -472,6 +475,8 @@ void super_AKZENT_reset (qk_tap_dance_state_t *state, void *user_data) {
 void super_CAPS_start (qk_tap_dance_state_t *state, void *user_data) {
   if (state->count == 1){
       layer_on(FN_LAYER_2);
+      caps_first_press = true;
+      caps_alt_was_registered = false;
   }
 }
 
@@ -507,27 +512,35 @@ void super_CAPS_finished (qk_tap_dance_state_t *state, void *user_data) {
 
 void super_CAPS_reset (qk_tap_dance_state_t *state, void *user_data) {
 
-  switch (tap_state.state) {
-    case SINGLE_TAP:
-        unregister_code(KC_CAPS);
-        break;
-    case SINGLE_HOLD:
-        break;
-    case DOUBLE_TAP:
-        unregister_code(KC_CAPS);
-        break;
-    case DOUBLE_HOLD:
-        break;
-    case DOUBLE_SINGLE_TAP:
-        break;
-    case TRIPLE_TAP:
-        break;
-    default:
-        break;
-  }
+    switch (tap_state.state) {
+        case SINGLE_TAP:
+            unregister_code(KC_CAPS);
+            break;
+        case SINGLE_HOLD:
+            break;
+        case DOUBLE_TAP:
+            unregister_code(KC_CAPS);
+            break;
+        case DOUBLE_HOLD:
+            break;
+        case DOUBLE_SINGLE_TAP:
+            break;
+        case TRIPLE_TAP:
+            break;
+        default:
+            break;
+    }
 
-  layer_off(FN_LAYER_2);
-  tap_state.state = 0;
+
+
+    caps_first_press = false;
+    caps_alt_was_registered = false;
+
+    if(!caps_alt_was_registered)
+        unregister_code(KC_LALT);
+
+    layer_off(FN_LAYER_2);
+    tap_state.state = 0;
 }
 
 void super_CTRL_finished (qk_tap_dance_state_t *state, void *user_data) {
@@ -726,7 +739,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     // Functions II, activated by CAPS LOCK
     [FN_LAYER_2] = LAYOUT(
         TO(DEFAULT_LAYER),  TG_SESFT,  TG_SWCPS,  TG_RSFTHM,  TG_LGRM,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  HYPR(KC_INS),
-        _______ , LALT(KC_P1), LALT(KC_P2), LALT(KC_P3), LALT(KC_P4), LALT(KC_P5), LALT(KC_P6), LALT(KC_P7), LALT(KC_P8), LALT(KC_P9), LALT(KC_P0), _______,  MARKUP_CODE,  XXXXXXX, REMOVE_LINE,  KC_VOLU,
+        _______ ,  KC_P1,   KC_P2,    KC_P3,    KC_P4,    KC_P5,    KC_P6,    KC_P7,    KC_P8,    KC_P9,    KC_P0, _______,  MARKUP_CODE,  XXXXXXX, REMOVE_LINE,  KC_VOLU,
         _______,  _______,  KC_WH_U,  _______,  MEH(KC_F24),  _______,  _______,  _______,  _______,  _______,  _______,  _______, KC_VOLU,  KC_MUTE,                    KC_VOLD,
         _______,  KC_WH_L,  KC_WH_D,  KC_WH_R,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,                  KC_CALC,             _______ ,
         _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______, _______,  _______,  KC_VOLD,  _______,                    KC_MS_UP, _______,
@@ -755,6 +768,26 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             if(keycode == KC_ESC)   // Wenn Escape gedrückt, nicht weiter prozessieren...
                 return false;
     }
+
+
+    if(caps_first_press){      // if caps (fn2) is pressed but nothing else
+        if(keycode >= KC_P1 && keycode <= KC_P0){   // AND Keypad Number 0 to 9 is pressed
+            if(!caps_alt_was_registered){           // if ALT was not registred before
+                register_code(KC_LALT);             // register ALT
+                caps_alt_was_registered = true;
+            }
+
+        }
+
+        caps_first_press = false;
+        if (record->event.pressed)
+            register_code(keycode);
+        else
+            unregister_code(keycode);
+
+        return false;       // do nothing, since keycode was already registred...
+    }
+
 
     switch (keycode) {
         case DP_LSFT:   // custom left shift
