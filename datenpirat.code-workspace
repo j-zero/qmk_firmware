@@ -16,7 +16,10 @@
 			"utility": "c",
 			"chrono": "c",
 			"xhash": "c",
-			"xtree": "c"
+			"xtree": "c",
+			"regex": "c",
+			"xlocale": "c",
+			"xstring": "c"
 		},
 		"terminal.integrated.shell.windows": "C:\\tools\\msys64\\usr\\bin\\bash.exe",
 		"terminal.integrated.env.windows": {

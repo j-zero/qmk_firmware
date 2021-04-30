@@ -78,6 +78,8 @@ enum RAW_COMMAND_ID
     RAW_COMMAND_RGBLIGHT_SET=0xC3,
     RAW_COMMAND_RGBLIGHT_ENABLE=0xC4,
     RAW_COMMAND_RGBLIGHT_DISABLE=0xC5,
+    RAW_COMMAND_RGBLIGHT_SETRGB_RANGE=0xC6,
+    RAW_COMMAND_RGBLIGHT_SETHSV_RANGE=0xC7,
 
     RAW_COMMAND_LAYER_INVERT=0xB1,
     RAW_COMMAND_LAYER_ON=0xB2,
@@ -86,6 +88,7 @@ enum RAW_COMMAND_ID
     RAW_COMMAND_UNDEFINED=0xff,
 };
 
+static uint8_t raw_data[RAW_EPSIZE];
 
 static bool sweet_caps_enabled = true;
 static bool sweet_caps_was_enabled = false;
@@ -189,6 +192,14 @@ layer_state_t layer_state_set_user(layer_state_t state) {
     rgblight_set_layer_state(2, layer_state_cmp(state, FN_LAYER_1)); // Fn1
     rgblight_set_layer_state(3, layer_state_cmp(state, FN_LAYER_2)); // Fn2
     rgblight_set_layer_state(7, layer_state_cmp(state, FUNKY_LAYER)); // Funky!
+
+
+    memset(raw_data,0,RAW_EPSIZE);
+
+    raw_data[0] = RAW_COMMAND_LAYER_REPORT;
+    raw_data[1] = biton32(state);
+
+    raw_hid_send(raw_data,RAW_EPSIZE);
     return state;
 }
 
@@ -492,7 +503,7 @@ void super_CAPS_finished (qk_tap_dance_state_t *state, void *user_data) {
         register_code(KC_CAPS);
         break;
     case SINGLE_HOLD:
-        layer_on(FN_LAYER_2);
+        //layer_on(FN_LAYER_2);
         break;
     case DOUBLE_TAP:
         if(sweet_caps_enabled){     // disable sweet_caps temporarily until next single tap
@@ -740,10 +751,10 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [FN_LAYER_2] = LAYOUT(
         TO(DEFAULT_LAYER),  TG_SESFT,  TG_SWCPS,  TG_RSFTHM,  TG_LGRM,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  HYPR(KC_INS),
         _______ ,  KC_P1,   KC_P2,    KC_P3,    KC_P4,    KC_P5,    KC_P6,    KC_P7,    KC_P8,    KC_P9,    KC_P0, _______,  MARKUP_CODE,  XXXXXXX, REMOVE_LINE,  KC_MS_UP,
-        _______,  _______,  KC_WH_U,  _______,  MEH(KC_F24),  _______,  _______,  _______,  _______,  _______,  _______,  _______, KC_VOLU,  KC_MUTE,                    KC_MS_DOWN,
+        _______,  _______,  KC_WH_U,  _______,  MEH(KC_F24),  _______,  _______,  _______,  _______,  _______,  _______,  _______, KC_VOLU,  KC_MUTE,                KC_MS_DOWN,
         _______,  KC_WH_L,  KC_WH_D,  KC_WH_R,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,                  KC_CALC,             _______ ,
-        _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______, _______,  _______,  KC_VOLD,  _______,                    KC_VOLU, _______,
-        _______,  KC_RGUI,  _______,                  KC_MPLY,  KC_MPLY,  KC_MPLY,                      _______,  _______,   KC_MSTP,             KC_MPRV, KC_VOLD,KC_MNXT
+        _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______, _______,  _______,  KC_VOLD,                     _______, KC_VOLU, KC_MSTP,
+        _______,  KC_RGUI,  _______,                  KC_MPLY,  KC_MPLY,  KC_MPLY,                      _______,  _______,   _______,             KC_MPRV, KC_VOLD,KC_MNXT
     ),
 
 };
@@ -769,7 +780,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 return false;
     }
 
-
+    // enable CAPS (Fn2) + Number -> ALT + Keypad Numbers
     if(caps_first_press){      // if caps (fn2) is pressed but nothing else
         caps_first_press = false;
         if(keycode >= KC_P1 && keycode <= KC_P0){   // AND Keypad Number 0 to 9 is pressed
@@ -787,7 +798,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         }
     }
 
-
+    // default keycode processing
     switch (keycode) {
         case DP_LSFT:   // custom left shift
             if (record->event.pressed) {
@@ -970,13 +981,14 @@ void print_keycode(uint16_t keycode) {
     send_string((const char *)display);
 }
 
-void raw_hid_receive( uint8_t *data, uint8_t length )
+void raw_hid_receive( uint8_t *data, uint8_t length )   // https://beta.docs.qmk.fm/using-qmk/software-features/feature_rawhid
 {
+    if(length != RAW_EPSIZE)
+        return;
 
+    uint8_t len = 0x00;
     uint8_t *command_id = &(data[0]);
     uint8_t *command_data = &(data[1]);
-
-    // todo: check length
 
     switch ( *command_id )
     {
@@ -995,9 +1007,11 @@ void raw_hid_receive( uint8_t *data, uint8_t length )
             }
             else
             {
+
                 rgblight_sethsv(command_data[1], command_data[2], command_data[3]);
-                command_data[0]=0x04;
-                command_data[4]=SUCCESS;
+                len = 0x04;
+                command_data[0]=len;
+                command_data[len]=SUCCESS;
             }
             break;
         }
@@ -1005,14 +1019,49 @@ void raw_hid_receive( uint8_t *data, uint8_t length )
         {
             if(command_data[0] != 3 )
             {
+                len = 0x01;
                 command_data[0]=0x01;
                 command_data[1]=FAILED;
             }
             else
             {
                 rgblight_setrgb(command_data[1], command_data[2], command_data[3]);
-                command_data[0]=0x04;
-                command_data[4]=SUCCESS;
+                len = 0x04;
+                command_data[0]=len;
+                command_data[len]=SUCCESS;
+            }
+            break;
+        }
+        case RAW_COMMAND_RGBLIGHT_SETHSV_RANGE:
+        {
+            if(command_data[0] != 5 )
+            {
+                command_data[0]=0x01;
+                command_data[1]=FAILED;
+            }
+            else
+            {
+                rgblight_sethsv_range(command_data[1], command_data[2], command_data[3],command_data[4],command_data[5]);
+                len = 0x06;
+                command_data[0]=len;
+                command_data[len]=SUCCESS;
+            }
+            break;
+        }
+        case RAW_COMMAND_RGBLIGHT_SETRGB_RANGE:
+        {
+            if(command_data[0] != 5 )
+            {
+                len = 0x01;
+                command_data[0]=0x01;
+                command_data[1]=FAILED;
+            }
+            else
+            {
+                rgblight_setrgb_range(command_data[1], command_data[2], command_data[3],command_data[4],command_data[5]);
+                len = 0x06;
+                command_data[0]=len;
+                command_data[len]=SUCCESS;
             }
             break;
         }
