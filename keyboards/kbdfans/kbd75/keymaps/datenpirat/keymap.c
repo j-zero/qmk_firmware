@@ -726,7 +726,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     // Functions II, activated by CAPS LOCK
     [FN_LAYER_2] = LAYOUT(
         TO(DEFAULT_LAYER),  TG_SESFT,  TG_SWCPS,  TG_RSFTHM,  TG_LGRM,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  HYPR(KC_INS),
-        _______ ,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,   _______,  _______, _______,  MARKUP_CODE,  XXXXXXX, REMOVE_LINE,  KC_VOLU,
+        _______ , LALT(KC_P1), LALT(KC_P2), LALT(KC_P3), LALT(KC_P4), LALT(KC_P5), LALT(KC_P6), LALT(KC_P7), LALT(KC_P8), LALT(KC_P9), LALT(KC_P0), _______,  MARKUP_CODE,  XXXXXXX, REMOVE_LINE,  KC_VOLU,
         _______,  _______,  KC_WH_U,  _______,  MEH(KC_F24),  _______,  _______,  _______,  _______,  _______,  _______,  _______, KC_VOLU,  KC_MUTE,                    KC_VOLD,
         _______,  KC_WH_L,  KC_WH_D,  KC_WH_R,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,                  KC_CALC,             _______ ,
         _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______, _______,  _______,  KC_VOLD,  _______,                    KC_MS_UP, _______,
