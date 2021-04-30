@@ -379,7 +379,6 @@ void sexy_shift_process(uint16_t keycode){
                 set_caps_led(false);
             }
         }
-
         sexy_shift_last_keycode = keycode;
     }
 
@@ -697,7 +696,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     // Funky Layer
 	[FUNKY_LAYER] = LAYOUT(
         _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,
-        _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  XXXXXXX,  _______, _______,
+        _______,  KC_P1,    KC_P2,    KC_P3,    KC_P4,    KC_P5,    KC_P6,    KC_P7,    KC_P8,    KC_P9,    KC_P0,  _______,  _______,  XXXXXXX,  _______, _______,
         _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,      _______,
         _______,  _______,  _______,  _______,  _______,  _______,  KC_LEFT,  KC_DOWN,  KC_UP,    KC_RGHT,  _______,  _______,                      _______,  _______,
         _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            KC_K,  _______,
@@ -717,10 +716,10 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     // Functions I, activated by APP
 	[FN_LAYER_1] = LAYOUT(
         TO(DEFAULT_LAYER), TG(PLAIN_LAYER), TG(FUNKY_LAYER), _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_PAUS, KC_SLCK , KC_NLCK,
-        _______,  _______, _______,  _______,  _______, _______,  _______,  KC_PSLS,  KC_PAST,  _______,  KC_NLCK,  _______,  MARKUP_CODE,  XXXXXXX, REMOVE_LINE, KC_ASUP,
-        _______,  RGB_TOG,  RGB_MOD,  RGB_HUI,  RGB_HUD,  RGB_SAI,  RGB_SAD,  RGB_VAI,  RGB_VAD,  _______,  _______,  _______,  KC_VOLU,  KC_MUTE,       KC_ASDN,
-        TG_SWCPS,  BL_DEC,  BL_INC,  BL_STEP,  _______,  _______,  _______,  _______,  _______,  TG(DISABLED_LAYER),  _______,  KC_F20,            KC_PENT,             _______,
-        TG_SESFT,  _______,  KC_BRIU,  KC_BRID,  _______,  _______,  _______,  _______,  _______,  _______,  KC_PDOT,  KC_VOLD,  TG_RSFTHM,                   KC_PGUP,  KC_ASRP,
+        _______,  _______, _______,  _______,  _______, _______,  _______,  KC_PSLS,  KC_PAST,  _______,  KC_NLCK,  _______,  MARKUP_CODE,  XXXXXXX, REMOVE_LINE,       _______,
+        _______,  RGB_TOG,  RGB_MOD,  RGB_HUI,  RGB_HUD,  RGB_SAI,  RGB_SAD,  RGB_VAI,  RGB_VAD,  _______,  _______,  _______,  KC_VOLU,  KC_MUTE,                      _______,
+        TG_SWCPS,  BL_DEC,  BL_INC,  BL_STEP,  _______,  _______,  _______,  _______,  _______,  TG(DISABLED_LAYER),  _______,  _______,            KC_PENT,             _______,
+        TG_SESFT,  _______,  KC_BRIU,  KC_BRID,  _______,  _______,  _______,  _______,  _______,  _______,  KC_PDOT,  KC_VOLD,  TG_RSFTHM,                   KC_PGUP,  _______,
         RESET  ,  TG_LGRM,  DEBUG,                  KC_MPLY,  KC_MPLY,  KC_MPLY,                         _______,  _______,  KC_RGUI,           LCTL(LGUI(KC_LEFT)),   KC_PGDN,  LCTL(LGUI(KC_RGHT))
     ),
 
@@ -944,6 +943,9 @@ void raw_hid_receive( uint8_t *data, uint8_t length )
 
     uint8_t *command_id = &(data[0]);
     uint8_t *command_data = &(data[1]);
+
+    // todo: check length
+
     switch ( *command_id )
     {
         case RAW_COMMAND_GET_PROTOCOL_VERSION:
