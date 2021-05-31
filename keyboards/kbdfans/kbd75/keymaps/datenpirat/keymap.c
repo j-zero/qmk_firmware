@@ -65,7 +65,8 @@ enum custom_keycodes {
     TG_SESFT,   // toggle sexy_shift
     TG_SWCPS,   // toggle sweet_caps
     TG_RSFTHM,  // toggle rshift_home
-    TG_LGRM,    // toggle lgui_remap (not eeprom)
+    TG_LGRM,    // toggle lgui_remap (not eeprom),
+    DP_SUDO
 };
 
 enum RAW_COMMAND_ID
@@ -740,10 +741,10 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     // Functions I, activated by APP
 	[FN_LAYER_1] = LAYOUT(
         TO(DEFAULT_LAYER), TG(PLAIN_LAYER), TG(FUNKY_LAYER), _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_PAUS, KC_SLCK , KC_NLCK,
-        _______,  _______, _______,  _______,  _______, _______,  _______,  KC_PSLS,  KC_PAST,  _______,  KC_NLCK,  _______,  MARKUP_CODE,  XXXXXXX, REMOVE_LINE,       _______,
+        _______,  _______, _______,  _______,  _______, _______,  _______,  KC_PSLS,  KC_PAST,  _______,  KC_NLCK,  _______,  MARKUP_CODE,  XXXXXXX, _______,       _______,
         _______,  RGB_TOG,  RGB_MOD,  RGB_HUI,  RGB_HUD,  RGB_SAI,  RGB_SAD,  RGB_VAI,  RGB_VAD,  _______,  _______,  _______,  KC_VOLU,  KC_MUTE,                      _______,
-        TG_SWCPS,  BL_DEC,  BL_INC,  BL_STEP,  _______,  _______,  _______,  _______,  _______,  TG(DISABLED_LAYER),  _______,  _______,            KC_PENT,             _______,
-        TG_SESFT,  _______,  KC_BRIU,  KC_BRID,  _______,  _______,  _______,  _______,  _______,  _______,  KC_PDOT,  KC_VOLD,  TG_RSFTHM,                   KC_PGUP,  _______,
+        TG_SWCPS,  _______,  DP_SUDO,  _______ ,  _______,  _______,  _______,  _______,  _______,  TG(DISABLED_LAYER),  _______,  _______,            KC_PENT,             _______,
+        TG_SESFT,  _______,  KC_BRIU,  KC_BRID,  BL_DEC,  BL_INC,  BL_STEP,  _______,  _______,  _______,  KC_PDOT,  KC_VOLD,  TG_RSFTHM,                   KC_PGUP,  _______,
         RESET  ,  TG_LGRM,  DEBUG,                  KC_MPLY,  KC_MPLY,  KC_MPLY,                         _______,  _______,  KC_RGUI,           LCTL(LGUI(KC_LEFT)),   KC_PGDN,  LCTL(LGUI(KC_RGHT))
     ),
 
@@ -869,6 +870,16 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         case MARKUP_CODE:
             if (record->event.pressed) {
                 SEND_STRING("+ + + ");
+            } else {
+
+            }
+            break;
+
+        case DP_SUDO:
+            if (record->event.pressed) {
+                tap_code(KC_HOME);
+                SEND_STRING("sudo ");
+                tap_code(KC_END);
             } else {
 
             }
