@@ -66,7 +66,8 @@ enum custom_keycodes {
     TG_SWCPS,   // toggle sweet_caps
     TG_RSFTHM,  // toggle rshift_home
     TG_LGRM,    // toggle lgui_remap (not eeprom),
-    DP_SUDO
+    DP_SUDO,    // adds "sudo " in front of line
+    DP_SCSZ    // custom ß
 };
 
 enum RAW_COMMAND_ID
@@ -285,6 +286,7 @@ bool sweet_caps_break(uint16_t keycode){
         case KC_RIGHT:
         case KC_SLSH:
         case KC_CAPS:
+        case DP_SCSZ:
             return false;
     }
     return true;
@@ -681,7 +683,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     // DEFAULT
         [DEFAULT_LAYER] = LAYOUT(
         LT(PLAIN_LAYER, KC_ESC),   KC_F1,    KC_F2,    KC_F3,    KC_F4,    KC_F5,    KC_F6,    KC_F7,    KC_F8,    KC_F9,    KC_F10,   KC_F11,   KC_F12,   TD(TD_PSCR),  KC_HOME,   KC_INS,
-        KC_GRV,   KC_1,     KC_2,     KC_3,     KC_4,     KC_5,     KC_6,     KC_7,     KC_8,     KC_9,     KC_0,     KC_MINS,  TD(TD_AKZENT),   XXXXXXX,  KC_BSPC,    KC_PGUP,
+        KC_GRV,   KC_1,     KC_2,     KC_3,     KC_4,     KC_5,     KC_6,     KC_7,     KC_8,     KC_9,     KC_0,     DP_SCSZ,  TD(TD_AKZENT),   XXXXXXX,  KC_BSPC,    KC_PGUP,
         KC_TAB,   KC_Q,     KC_W,     KC_E,     KC_R,     KC_T,     KC_Y,     KC_U,     KC_I,     KC_O,     KC_P,     KC_LBRC,  KC_RBRC,  KC_BSLS,              KC_PGDN ,
         TD(TD_CAPS),  KC_A,     KC_S,     KC_D,     KC_F,     KC_G,     KC_H,     KC_J,     KC_K,     KC_L,     KC_SCLN,  KC_QUOT,                      KC_ENT,      KC_DEL,
         DP_LSFT,  KC_NUBS,  KC_Z,   KC_X,     KC_C,     KC_V,     KC_B,     KC_N,     KC_M,     KC_COMM,  KC_DOT,   KC_SLSH,  DP_RSFT,       KC_UP,   KC_END,
@@ -751,7 +753,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     // Functions II, activated by CAPS LOCK
     [FN_LAYER_2] = LAYOUT(
         TO(DEFAULT_LAYER),  TG_SESFT,  TG_SWCPS,  TG_RSFTHM,  TG_LGRM,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  HYPR(KC_INS),
-        _______ ,  KC_P1,   KC_P2,    KC_P3,    KC_P4,    KC_P5,    KC_P6,    KC_P7,    KC_P8,    KC_P9,    KC_P0, _______,  MARKUP_CODE,  XXXXXXX, REMOVE_LINE,  KC_MS_UP,
+        _______ ,  KC_P1,   KC_P2,    KC_P3,    KC_P4,    KC_P5,    KC_P6,    KC_P7,    KC_P8,    KC_P9,    KC_P0, MEH(KC_MINS),  MARKUP_CODE,  XXXXXXX, REMOVE_LINE,  KC_MS_UP,
         _______,  _______,  KC_WH_U,  _______,  MEH(KC_F24),  _______,  _______,  _______,  _______,  _______,  _______,  _______, KC_VOLU,  KC_MUTE,                KC_MS_DOWN,
         _______,  KC_WH_L,  KC_WH_D,  KC_WH_R,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,                  KC_CALC,             _______ ,
         _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______, _______,  _______,  KC_VOLD,                     _______, KC_VOLU, KC_MSTP,
@@ -761,7 +763,6 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 };
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
-
 
     /* button test
     if (record->event.pressed){
@@ -804,7 +805,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         case DP_LSFT:   // custom left shift
             if (record->event.pressed) {
                 lshift_is_pressed = true;
-                if(sexy_shift_enabled){
+                if(sexy_shift_enabled && !is_capslock_on()){
                     sexy_shift_stop();
                     sexy_shift_start(keycode, KC_LSFT, SHIFT_LAYER);
                 }
@@ -813,7 +814,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             }
             else if (!record->event.pressed) {
                 lshift_is_pressed = false;
-               if(sexy_shift_enabled && (sexy_shift_command_keycode == keycode)){
+               if(sexy_shift_enabled && (sexy_shift_command_keycode == keycode) && !is_capslock_on()){
                     sexy_shift_stop();
                     /*
                    if(shift_home_end_enabled && sexy_shift_is_tapped()){
@@ -837,7 +838,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         case DP_RSFT:   // custom right shift
             if (record->event.pressed) {
                 rshift_is_pressed = true;
-                if(sexy_shift_enabled){
+                if(sexy_shift_enabled && !is_capslock_on()){
                     sexy_shift_stop();
                     sexy_shift_start(keycode, KC_RSFT, RSHIFT_LAYER);
                 }
@@ -846,7 +847,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             }
             else if (!record->event.pressed) {
                 rshift_is_pressed = false;
-                if(sexy_shift_enabled && (sexy_shift_command_keycode == keycode)){
+                if(sexy_shift_enabled && (sexy_shift_command_keycode == keycode) && !is_capslock_on()){
                     sexy_shift_stop();
 
                     if(shift_home_end_enabled && sexy_shift_is_tapped()){
@@ -968,6 +969,29 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
             }
             break;
+
+        // Custom KC_MINS == ß
+        case DP_SCSZ:
+            if (record->event.pressed) {
+                if(sweet_caps_enabled && (get_mods() == 0) && is_capslock_on()){
+                    set_mods(MOD_MASK_CSA); // (L/R)CTRL   , (L/R)SHIFT , (L/R)ALT
+                    register_code(KC_MINS);
+                    clear_mods();
+                }
+                else{
+                    register_code(KC_MINS);
+                }
+            }
+            else if (!record->event.pressed) {
+                if(sweet_caps_enabled && (get_mods() == 0) && is_capslock_on()){
+                    unregister_code(KC_MINS);
+                }
+                else{
+                    unregister_code(KC_MINS);
+                }
+            }
+            break;
+
 
     }
 
