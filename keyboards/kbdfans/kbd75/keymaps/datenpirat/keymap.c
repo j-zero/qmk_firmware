@@ -12,6 +12,7 @@ typedef union {
     bool     sexy_shift_enabled     :1;
     bool     sweet_caps_enabled     :1;
     bool     shift_home_end_enabled :1;
+    bool     sweet_caps_enabled_sz  :1;
   };
 } user_config_t;
 
@@ -66,8 +67,10 @@ enum custom_keycodes {
     TG_SWCPS,   // toggle sweet_caps
     TG_RSFTHM,  // toggle rshift_home
     TG_LGRM,    // toggle lgui_remap (not eeprom),
+    TG_SCSZ,    // toogle custom ß on sweet caps
     DP_SUDO,    // adds "sudo " in front of line
-    DP_SCSZ    // custom ß
+    DP_SCSZ    // custom ß on sweet caps
+
 };
 
 enum RAW_COMMAND_ID
@@ -95,6 +98,7 @@ static uint8_t raw_data[RAW_EPSIZE];
 static bool sweet_caps_enabled = true;
 static bool sweet_caps_was_enabled = false;
 static bool shift_home_end_enabled = true;
+static bool sweet_caps_enabled_sz = true;
 static bool lgui_remaped = false;
 
 static bool caps_first_press = false;
@@ -213,6 +217,7 @@ void update_eeprom(){
     user_config.sexy_shift_enabled = sexy_shift_enabled;
     user_config.sweet_caps_enabled = sweet_caps_enabled;
     user_config.shift_home_end_enabled = shift_home_end_enabled;
+    user_config.sweet_caps_enabled_sz = sweet_caps_enabled_sz;
     eeconfig_update_user(user_config.raw); // Writes the new status to EEPROM
 }
 
@@ -228,6 +233,7 @@ void shift_home_end_enable(bool enabled){
     ack_signal(enabled);
     update_eeprom();
 }
+
 void shift_home_end_toggle(void){
     shift_home_end_enable(!shift_home_end_enabled);
 }
@@ -249,6 +255,16 @@ void sweet_caps_enable(bool enabled){
 }
 void sweet_caps_toggle(void){
     sweet_caps_enable(!sweet_caps_enabled);
+}
+
+// Sweet Caps Custom SZ
+void sweet_caps_enable_sz(bool enabled){
+    sweet_caps_enabled_sz = enabled;
+    ack_signal(enabled);
+    update_eeprom();
+}
+void sweet_caps_toggle_sz(void){
+    sweet_caps_enable_sz(!sweet_caps_enabled_sz);
 }
 
 bool sweet_caps_break(uint16_t keycode){
@@ -743,7 +759,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     // Functions I, activated by APP
 	[FN_LAYER_1] = LAYOUT(
         TO(DEFAULT_LAYER), TG(PLAIN_LAYER), TG(FUNKY_LAYER), _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_PAUS, KC_SLCK , KC_NLCK,
-        _______,  _______, _______,  _______,  _______, _______,  _______,  KC_PSLS,  KC_PAST,  _______,  KC_NLCK,  _______,  MARKUP_CODE,  XXXXXXX, _______,       _______,
+        _______,  _______, _______,  _______,  _______, _______,  _______,  KC_PSLS,  KC_PAST,  _______,  KC_NLCK,  TG_SCSZ,  MARKUP_CODE,  XXXXXXX, _______,       _______,
         _______,  RGB_TOG,  RGB_MOD,  RGB_HUI,  RGB_HUD,  RGB_SAI,  RGB_SAD,  RGB_VAI,  RGB_VAD,  _______,  _______,  _______,  KC_VOLU,  KC_MUTE,                      _______,
         TG_SWCPS,  _______,  DP_SUDO,  _______ ,  _______,  _______,  _______,  _______,  _______,  TG(DISABLED_LAYER),  _______,  _______,            KC_PENT,             _______,
         TG_SESFT,  _______,  KC_BRIU,  KC_BRID,  BL_DEC,  BL_INC,  BL_STEP,  _______,  _______,  _______,  KC_PDOT,  KC_VOLD,  TG_RSFTHM,                   KC_PGUP,  _______,
@@ -970,10 +986,19 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             }
             break;
 
+        // toggle sweet caps enable large ß remap
+        case TG_SCSZ:
+            if (record->event.pressed) {
+                sweet_caps_toggle_sz();
+            } else {
+
+            }
+            break;
+
         // Custom KC_MINS == ß
         case DP_SCSZ:
             if (record->event.pressed) {
-                if(sweet_caps_enabled && (get_mods() == 0) && is_capslock_on()){
+                if(sweet_caps_enabled && (get_mods() == 0) && is_capslock_on() && sweet_caps_enabled_sz){
                     set_mods(MOD_MASK_CSA); // (L/R)CTRL   , (L/R)SHIFT , (L/R)ALT
                     register_code(KC_MINS);
                     clear_mods();
@@ -983,7 +1008,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 }
             }
             else if (!record->event.pressed) {
-                if(sweet_caps_enabled && (get_mods() == 0) && is_capslock_on()){
+                if(sweet_caps_enabled && (get_mods() == 0) && is_capslock_on() && sweet_caps_enabled_sz){
                     unregister_code(KC_MINS);
                 }
                 else{
@@ -1007,6 +1032,7 @@ void eeconfig_init_user(void) {  // EEPROM is getting reset!
     user_config.sweet_caps_enabled = true; // We want this enabled by default
     user_config.sexy_shift_enabled = true; // We want this enabled by default
     user_config.shift_home_end_enabled = false; // We want this enabled by default
+    user_config.sweet_caps_enabled_sz = false; // We want this enabled by default
     eeconfig_update_user(user_config.raw); // Write default value to EEPROM now
 }
 

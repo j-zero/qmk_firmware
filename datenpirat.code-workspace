@@ -29,6 +29,9 @@
 		"terminal.integrated.shellArgs.windows": [
 			"--login"
 		],
-		"terminal.integrated.cursorStyle": "line"
+		"terminal.integrated.cursorStyle": "line",
+		"stm32-for-vscode.openOCDPath": false,
+		"stm32-for-vscode.makePath": false,
+		"stm32-for-vscode.armToolchainPath": false
 	}
 }
