@@ -391,6 +391,7 @@ bool sexy_shift_ignore(uint16_t keycode){
         case KC_COMM:
         case KC_DOT:
         case KC_SLSH:
+        case DP_SCSZ:
             return true;
     }
     return false;
