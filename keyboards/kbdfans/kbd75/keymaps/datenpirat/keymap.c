@@ -382,8 +382,15 @@ bool sexy_shift_ignore(uint16_t keycode){
         case DP_LSFT:
         case DP_RSFT:
         case KC_1:
+        case KC_2:
+        case KC_3:
+        case KC_4:
+        case KC_5:
+        case KC_6:
+        case KC_7:
         case KC_8:
         case KC_9:
+        case KC_0:
         case KC_SPC:
         case KC_RBRC:
         case KC_BSPC:
