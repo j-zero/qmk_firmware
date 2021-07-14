@@ -20,4 +20,4 @@ UNICODE_ENABLE   		= no  # Unicode
 SWAP_HANDS_ENABLE		= no  # Allow swapping hands of keyboard
 TERMINAL_ENABLE 		= no  # This feature is currently huge, and should probably only be put on boards with a lot of memory, or for fun.
 WPM_ENABLE 				= no
-BOOTMAGIC_ENABLE 		= full
+BOOTMAGIC_ENABLE 		= no

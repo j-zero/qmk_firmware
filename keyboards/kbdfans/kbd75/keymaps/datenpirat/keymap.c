@@ -69,8 +69,8 @@ enum custom_keycodes {
     TG_LGRM,    // toggle lgui_remap (not eeprom),
     TG_SCSZ,    // toogle custom ß on sweet caps
     DP_SUDO,    // adds "sudo " in front of line
-    DP_SCSZ    // custom ß on sweet caps
-
+    DP_SCSZ,    // custom ß on sweet caps
+    DP_MMUTE    // custom microphone mute key (sends 0xdeadbabe[00|01] over usb raw hid)
 };
 
 enum RAW_COMMAND_ID
@@ -583,6 +583,12 @@ void super_CAPS_reset (qk_tap_dance_state_t *state, void *user_data) {
     tap_state.state = 0;
 }
 
+void super_CTRL_start (qk_tap_dance_state_t *state, void *user_data) {
+  if (state->count == 1){
+
+  }
+}
+
 void super_CTRL_finished (qk_tap_dance_state_t *state, void *user_data) {
   tap_state.state = get_dance_state(state);
   switch (tap_state.state) {
@@ -676,7 +682,7 @@ void super_PSCR_reset (qk_tap_dance_state_t *state, void *user_data) {
 //Tap Dance Definitions
 qk_tap_dance_action_t tap_dance_actions[] = {
     [TD_CAPS]        = ACTION_TAP_DANCE_FN_ADVANCED(super_CAPS_start ,super_CAPS_finished, super_CAPS_reset),
-    [TD_CTRL]        = ACTION_TAP_DANCE_FN_ADVANCED(NULL,super_CTRL_finished, super_CTRL_reset),
+    [TD_CTRL]        = ACTION_TAP_DANCE_FN_ADVANCED(super_CTRL_start,super_CTRL_finished, super_CTRL_reset),
     [TD_AKZENT]         = ACTION_TAP_DANCE_FN_ADVANCED(NULL,super_AKZENT_finished, super_AKZENT_reset),
     [TD_PSCR]        = ACTION_TAP_DANCE_FN_ADVANCED(super_PSCR_start,super_PSCR_finished, super_PSCR_reset),
 };
@@ -728,7 +734,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
     // Shift Layer
 	[SHIFT_LAYER] = LAYOUT(
-        _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,
+        _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  DP_MMUTE,  _______,  _______,
         _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  XXXXXXX,  KC_UNSHIFT_DEL, _______,
         _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            _______,
         KC_ENT,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,                      _______,  _______,
@@ -995,6 +1001,27 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             }
             break;
 
+        // sends raw hid 0xdeadbabe[00|01]
+        case DP_MMUTE:
+             memset(raw_data,0,RAW_EPSIZE);
+            if (record->event.pressed) {
+                raw_data[0] = 0xde;
+                raw_data[1] = 0xad;
+                raw_data[2] = 0xba;
+                raw_data[3] = 0xbe;
+                raw_data[4] = 0x00;
+                raw_hid_send(raw_data, sizeof(raw_data));
+                
+            } else {
+                raw_data[0] = 0xde;
+                raw_data[1] = 0xad;
+                raw_data[2] = 0xba;
+                raw_data[3] = 0xbe;
+                raw_data[4] = 0x01;
+                raw_hid_send(raw_data, sizeof(raw_data));
+            }
+            break;
+        
         // toggle sexy shift
         case TG_SESFT:
             if (record->event.pressed) {

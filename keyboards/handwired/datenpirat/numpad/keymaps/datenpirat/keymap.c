@@ -7,17 +7,14 @@
 #define FAILED 0xff
 
 enum {
-  DEFAULT_LAYER = 0,
-  PLAIN_LAYER,
-  FN_LAYER,
-  CALC_LAYER,
-  CALC_FN_LAYER,
-  CONF_LAYER,
+  PLAIN_LAYER = 0,
+  FN_LAYER
 };
 
 enum custom_keycodes {
   DP_CALC = SAFE_RANGE,
-  DP_CLOSECALC
+  DP_CLOSECALC,
+  DP_MMUTE
 };
 
 typedef struct {
@@ -53,10 +50,15 @@ enum RAW_COMMAND_ID
     RAW_COMMAND_UNDEFINED=0xff,
 };
 
+static uint8_t raw_data[RAW_EPSIZE];
 
-int LED_RED = 1;
-int LED_GREEN = 0;
 int LED_OFF = 0;
+int PLAIN_ENABLED = 0;
+
+void set_num_led_red(void);
+void set_num_led_green(void);
+void set_num_led_off(void);
+
 
 int get_dance_state (qk_tap_dance_state_t *state) {
   if (state->count == 1) {
@@ -92,110 +94,20 @@ static tap tap_state = {
   .state = 0
 };
 
-void dance_KC6_finished (qk_tap_dance_state_t *state, void *user_data) {
-  tap_state.state = get_dance_state(state);
-  switch (tap_state.state) {
-    case SINGLE_TAP:
-        register_code (KC_F);
-        break;
-    case DOUBLE_TAP:
-        register_code(KC_LSFT); register_code(KC_NUBS);
-        break;
-    default:
-        break;
-  }
-}
-
-void dance_KC6_reset (qk_tap_dance_state_t *state, void *user_data) {
-  switch (tap_state.state) {
-    case SINGLE_TAP:
-        unregister_code (KC_F);
-        break;
-    case DOUBLE_TAP:
-        unregister_code(KC_NUBS); unregister_code(KC_LSFT);
-        break;
-    default:
-        break;
-  }
-  tap_state.state = 0;
-}
-
-void dance_KC8_finished (qk_tap_dance_state_t *state, void *user_data) {
-  tap_state.state = get_dance_state(state);
-  switch (tap_state.state) {
-    case SINGLE_TAP:
-        register_code(KC_LSFT); register_code(KC_8);
-        break;
-    case DOUBLE_TAP:
-        register_code (KC_P8);
-        break;
-    default:
-        //register_code(KC_LSFT); register_code(KC_8);
-        break;
-  }
-}
-
-void dance_KC8_reset (qk_tap_dance_state_t *state, void *user_data) {
-  switch (tap_state.state) {
-    case SINGLE_TAP:
-        unregister_code(KC_8); unregister_code(KC_LSFT);
-        break;
-    case DOUBLE_TAP:
-        unregister_code(KC_P8);
-        break;
-    default:
-        //unregister_code(KC_8); unregister_code(KC_LSFT);
-        break;
-  }
-  tap_state.state = 0;
-}
-
-void dance_KC9_finished (qk_tap_dance_state_t *state, void *user_data) {
-  tap_state.state = get_dance_state(state);
-  switch (tap_state.state) {
-    case SINGLE_TAP:
-        register_code(KC_LSFT); register_code(KC_9);
-        break;
-    case DOUBLE_TAP:
-        register_code(KC_P9);
-        break;
-    default:
-        //register_code (KC_P9);
-        break;
-  }
-}
-
-void dance_KC9_reset (qk_tap_dance_state_t *state, void *user_data) {
-  switch (tap_state.state) {
-    case SINGLE_TAP:
-        unregister_code(KC_9); unregister_code(KC_LSFT);
-        break;
-    case DOUBLE_TAP:
-        unregister_code(KC_P9);
-        break;
-    default:
-        //unregister_code (KC_P9);
-        break;
-  }
-  tap_state.state = 0;
-}
-
 void dance_NUM_finished (qk_tap_dance_state_t *state, void *user_data) {
   tap_state.state = get_dance_state(state);
   switch (tap_state.state) {
     case SINGLE_TAP:
-        layer_invert(CALC_LAYER);
+        layer_invert(FN_LAYER);
         break;
     case SINGLE_HOLD:
-        layer_invert(PLAIN_LAYER);
+        register_code (KC_NLCK);
         break;
     case DOUBLE_TAP:
-        register_code (KC_NLCK);
         break;
     case DOUBLE_HOLD:
         break;
     case TRIPLE_TAP:
-        layer_invert(CONF_LAYER);
         break;
     case TRIPLE_HOLD:
         reset_keyboard();
@@ -210,9 +122,9 @@ void dance_NUM_reset (qk_tap_dance_state_t *state, void *user_data) {
     case SINGLE_TAP:
         break;
     case SINGLE_HOLD:
+        unregister_code (KC_NLCK);
         break;
     case DOUBLE_TAP:
-        unregister_code (KC_NLCK);
         break;
     case DOUBLE_HOLD:
         break;
@@ -229,15 +141,6 @@ void dance_NUM_reset (qk_tap_dance_state_t *state, void *user_data) {
 enum {
     TD_DOT_COMMAS = 0,
     TD_NUM,
-    TD_KC1,
-    TD_KC2,
-    TD_KC3,
-    TD_KC4,
-    TD_KC5,
-    TD_KC6,
-    TD_KC7,
-    TD_KC8,
-    TD_KC9,
 };
 
 //Tap Dance Definitions
@@ -245,57 +148,45 @@ qk_tap_dance_action_t tap_dance_actions[] = {
   //Tap once for Esc, twice for Caps Lock
   [TD_DOT_COMMAS]  = ACTION_TAP_DANCE_DOUBLE(KC_PDOT, KC_DOT),
   [TD_NUM] = ACTION_TAP_DANCE_FN_ADVANCED (NULL, dance_NUM_finished, dance_NUM_reset),
-  [TD_KC1] = ACTION_TAP_DANCE_DOUBLE(KC_A, KC_X),
-  [TD_KC2] = ACTION_TAP_DANCE_DOUBLE(KC_B, KC_X),
-  [TD_KC3] = ACTION_TAP_DANCE_DOUBLE(KC_C, KC_X),
-  [TD_KC4] = ACTION_TAP_DANCE_DOUBLE(KC_D, KC_NUBS),
-  [TD_KC5] = ACTION_TAP_DANCE_DOUBLE(KC_E, KC_X),
-  [TD_KC6] = ACTION_TAP_DANCE_FN_ADVANCED (NULL, dance_KC6_finished, dance_KC6_reset),
-  [TD_KC7] = ACTION_TAP_DANCE_DOUBLE(KC_P7, KC_X),
-  [TD_KC8] = ACTION_TAP_DANCE_FN_ADVANCED (NULL, dance_KC8_finished, dance_KC8_reset),
-  [TD_KC9] = ACTION_TAP_DANCE_FN_ADVANCED (NULL, dance_KC9_finished, dance_KC9_reset)
-// Other declarations would go here, separated by commas, if you have them
 };
 
-const rgblight_segment_t PROGMEM my_layer1_layer[] = RGBLIGHT_LAYER_SEGMENTS(
-    { 0, 0, HSV_RED}
-);
-const rgblight_segment_t PROGMEM my_layer2_layer[] = RGBLIGHT_LAYER_SEGMENTS(
-    { 0, 15, HSV_GREEN}
-);
-const rgblight_segment_t PROGMEM my_layer3_layer[] = RGBLIGHT_LAYER_SEGMENTS(
-    { 0, 15, HSV_BLUE}
-);
-const rgblight_segment_t PROGMEM my_layer4_layer[] = RGBLIGHT_LAYER_SEGMENTS(
-    { 0, 15, HSV_ORANGE}
-);
-const rgblight_segment_t PROGMEM my_layer5_layer[] = RGBLIGHT_LAYER_SEGMENTS(
-    { 0, 15, HSV_PURPLE}
-);
-const rgblight_segment_t PROGMEM my_layer6_layer[] = RGBLIGHT_LAYER_SEGMENTS(
-    { 0, 15, HSV_CYAN}
+const rgblight_segment_t PROGMEM rgb_default_layer[] = RGBLIGHT_LAYER_SEGMENTS(
+    { 0, 0, HSV_BLACK}
 );
 
-// etc..
+const rgblight_segment_t PROGMEM rgb_plain_layer[] = RGBLIGHT_LAYER_SEGMENTS(
+    { 0, 15, HSV_WHITE}
+);
+
 
 // Now define the array of layers. Later layers take precedence
 const rgblight_segment_t* const PROGMEM my_rgb_layers[] = RGBLIGHT_LAYERS_LIST(
-    my_layer1_layer,    // Overrides caps lock layer
-    my_layer2_layer,     // Overrides other layers
-    my_layer3_layer,     // Overrides other layers
-    my_layer4_layer,     // Overrides other layers
-    my_layer5_layer,     // Overrides other layers
-    my_layer6_layer     // Overrides other layers
+    rgb_default_layer,
+    rgb_plain_layer
 );
+
+void set_num_led_red(void){
+    writePin(B4, true);
+    writePin(B5, false);
+}
+
+void set_num_led_green(void){
+    writePin(B4, false);
+    writePin(B5, true);
+}
+
+void set_num_led_off(void){
+    writePinLow(B4);
+    writePinLow(B5);
+}
+
 
 void keyboard_post_init_user(void) {
     // Enable the LED layers
     rgblight_layers = my_rgb_layers;
     rgblight_set_layer_state(0, true);
-    writePin(B4, true);
-    writePin(B5, false);
+    set_num_led_red();
 }
-
 
 layer_state_t layer_state_set_user(layer_state_t state) {
 
@@ -309,47 +200,42 @@ layer_state_t layer_state_set_user(layer_state_t state) {
 #endif
 
     // Both layers will light up if both kb layers are active
-    rgblight_set_layer_state(0, layer_state_cmp(state, DEFAULT_LAYER));
+    //rgblight_set_layer_state(0, layer_state_cmp(state, DEFAULT_LAYER));
     rgblight_set_layer_state(1, layer_state_cmp(state, PLAIN_LAYER));
-    rgblight_set_layer_state(2, layer_state_cmp(state, FN_LAYER));
-    rgblight_set_layer_state(3, layer_state_cmp(state, CALC_LAYER));
-    rgblight_set_layer_state(4, layer_state_cmp(state, CALC_FN_LAYER));
-    rgblight_set_layer_state(5, layer_state_cmp(state, CONF_LAYER));
 
-    writePinLow(B4);
-    writePinLow(B5);
+    PLAIN_ENABLED = layer_state_cmp(state, PLAIN_LAYER);
 
-    LED_RED = !layer_state_cmp(state, CALC_LAYER);
-    LED_GREEN = layer_state_cmp(state, CALC_LAYER);
-
-    if(!LED_OFF){
-        writePin(B4, LED_RED);
-        writePin(B5, LED_GREEN);
+    if(layer_state_cmp(state, FN_LAYER)){
+        set_num_led_red();
     }
-
-
+    else if(PLAIN_ENABLED)
+    {
+        if(!LED_OFF)
+            set_num_led_green();
+        else
+            set_num_led_off();
+    }
 
     return state;
 }
 
 bool led_update_user(led_t led_state) {
-    writePinLow(B4);
-    writePinLow(B5);
-    //rgblight_set_layer_state(1, !led_state.num_lock);
 
-    if(!led_state.num_lock){
-        writePinLow(B4);
-        writePinLow(B5);
-        LED_OFF = 1;
-    }
-    else{
-        writePin(B4, LED_RED);
-        writePin(B5, LED_GREEN);
+    if(led_state.num_lock){
         LED_OFF = 0;
     }
+    else{
+        LED_OFF = 1;
+    }
 
-
-
+    if(PLAIN_ENABLED){
+        if(led_state.num_lock)
+            set_num_led_green();
+        else
+            set_num_led_off();
+    }
+    //else
+    //    set_num_led_off();
 
     return true;
 }
@@ -372,25 +258,31 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 #endif
 */
   switch (keycode) {
-    case DP_CALC:
+    // sends raw hid 0xdeadbabe[00|01]
+    case DP_MMUTE:
+            memset(raw_data,0,RAW_EPSIZE);
         if (record->event.pressed) {
-            layer_invert(CALC_LAYER);
-            register_code(KC_CALC);
-        } else {
-            unregister_code(KC_CALC);
-        }
-        return false;
+            raw_data[0] = 0xde;
+            raw_data[1] = 0xad;
+            raw_data[2] = 0xba;
+            raw_data[3] = 0xbe;
+            raw_data[4] = 0x00;
+            raw_hid_send(raw_data, sizeof(raw_data));
 
-    case DP_CLOSECALC:
-        if (record->event.pressed) {
-            layer_invert(CALC_LAYER);
-            register_code(KC_LALT); tap_code(KC_F4);
         } else {
-            unregister_code(KC_LALT);
+            raw_data[0] = 0xde;
+            raw_data[1] = 0xad;
+            raw_data[2] = 0xba;
+            raw_data[3] = 0xbe;
+            raw_data[4] = 0x01;
+            raw_hid_send(raw_data, sizeof(raw_data));
         }
+        break;
 
         return false;
   }
+
+
   return true;
 
 };
@@ -399,60 +291,28 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
-// Custom Macro-Pad
-  [DEFAULT_LAYER] = LAYOUT_numpad_5x4(
-    TD(TD_NUM),   KC_MPLY, KC_MUTE, KC_VOLD,
-    KC_P7,   KC_P8,   KC_P9,
-    KC_P4,   KC_P5,   KC_P6,        KC_VOLU,
-    KC_P1,   KC_P2,   KC_P3,
-    LT(FN_LAYER, KC_P0), KC_PDOT, KC_PENT
-  ),
-// Default numpad
+    // Default numpad
    [PLAIN_LAYER] = LAYOUT_numpad_5x4(
-    _______,  KC_PSLS,   KC_PAST,  KC_PMNS,
-    _______,  _______,   _______,
-    _______,  _______,   _______,  KC_PPLS,
-    _______,  _______,   _______,
-    _______,             _______,  _______
+    TD(TD_NUM),  KC_PSLS,   KC_PAST,  KC_PMNS,
+    KC_P7,    KC_P8,     KC_P9,
+    KC_P4,    KC_P5,     KC_P6,  KC_PPLS,
+    KC_P1,    KC_P2,     KC_P3,
+    KC_P0,               KC_PDOT,  KC_PENT
   ),
-
-  [FN_LAYER] = LAYOUT_numpad_5x4(
-     KC_F19,  KC_PSLS,   KC_PAST,  KC_PMNS,
-    _______,  _______,   _______,
-    _______,  _______,   _______,  KC_PPLS,
-    _______,  _______,   _______,
-    _______,             KC_DOT,   DP_CALC
-  ),
-
-
-  [CALC_LAYER] = LAYOUT_numpad_5x4(
-    _______,  KC_PSLS,   KC_PAST,   KC_PMNS,
-    _______,  _______,   _______,
-    _______,  _______,   _______, KC_PPLS,
-    _______,     _______,      _______,
-    LT(CALC_FN_LAYER, KC_P0),  KC_PDOT,  _______
-  ),
-
-    [CALC_FN_LAYER] = LAYOUT_numpad_5x4(
-    LALT(KC_2),  LSFT(KC_5),   KC_ESC,      KC_F6,
-    TD(TD_KC7), TD(TD_KC8), TD(TD_KC9),
-    TD(TD_KC4), TD(TD_KC5), TD(TD_KC6),  KC_F5,
-    TD(TD_KC1), TD(TD_KC2), TD(TD_KC3),
-    _______,             KC_BSPC,        LALT(KC_4)
-  ),
-
-  [CONF_LAYER] = LAYOUT_numpad_5x4(
-    KC_TRNS,   RGB_MOD,  RGB_TOG, RGB_HUD,
-    RGB_VAI,   RGB_SAI,  KC_PGUP,
-    KC_BSPC,   KC_ESC,   KC_MPLY, RGB_HUI,
-    RGB_VAD,   RGB_SAD,  KC_PGDN,
-    KC_NO,     KC_PDOT,           DP_CALC
+    // Custom Macro-Pad
+   [FN_LAYER] = LAYOUT_numpad_5x4(
+    _______,   KC_MPLY, KC_MUTE, KC_VOLD,
+    KC_F19,   KC_F20,   KC_F21,
+    KC_F16,   KC_F17,   KC_F18,     KC_VOLU,
+    KC_F13,   KC_F14,   KC_F15,
+    DP_MMUTE,           KC_F22,     KC_CALC
   )
+
 };
 
 void raw_hid_receive( uint8_t *data, uint8_t length )
 {
-    /*
+
     uint8_t *command_id = &(data[0]);
     uint8_t *command_data = &(data[1]);
     switch ( *command_id )
@@ -574,5 +434,5 @@ void raw_hid_receive( uint8_t *data, uint8_t length )
         }
     }
     raw_hid_send(data,length);
-    */
+
 }
