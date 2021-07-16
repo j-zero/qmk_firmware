@@ -14,7 +14,8 @@ enum {
 enum custom_keycodes {
   DP_CALC = SAFE_RANGE,
   DP_CLOSECALC,
-  DP_MMUTE
+  DP_MMUTE,
+  DP_TGMUTE
 };
 
 typedef struct {
@@ -58,6 +59,7 @@ int PLAIN_ENABLED = 0;
 void set_num_led_red(void);
 void set_num_led_green(void);
 void set_num_led_off(void);
+void send_0xdeadbabe(uint8_t);
 
 
 int get_dance_state (qk_tap_dance_state_t *state) {
@@ -150,7 +152,8 @@ qk_tap_dance_action_t tap_dance_actions[] = {
   [TD_NUM] = ACTION_TAP_DANCE_FN_ADVANCED (NULL, dance_NUM_finished, dance_NUM_reset),
 };
 
-const rgblight_segment_t PROGMEM rgb_default_layer[] = RGBLIGHT_LAYER_SEGMENTS(
+
+const rgblight_segment_t PROGMEM rgb_raw_layer[] = RGBLIGHT_LAYER_SEGMENTS(
     { 0, 0, HSV_BLACK}
 );
 
@@ -159,10 +162,13 @@ const rgblight_segment_t PROGMEM rgb_plain_layer[] = RGBLIGHT_LAYER_SEGMENTS(
 );
 
 
+
+
+
 // Now define the array of layers. Later layers take precedence
 const rgblight_segment_t* const PROGMEM my_rgb_layers[] = RGBLIGHT_LAYERS_LIST(
-    rgb_default_layer,
-    rgb_plain_layer
+    rgb_plain_layer,
+    rgb_raw_layer
 );
 
 void set_num_led_red(void){
@@ -180,12 +186,22 @@ void set_num_led_off(void){
     writePinLow(B5);
 }
 
+void send_0xdeadbabe(uint8_t cmd){
+        memset(raw_data,0,RAW_EPSIZE);
+        raw_data[0] = 0xde;
+        raw_data[1] = 0xad;
+        raw_data[2] = 0xba;
+        raw_data[3] = 0xbe;
+        raw_data[4] = cmd;
+        raw_hid_send(raw_data, sizeof(raw_data));
+}
 
 void keyboard_post_init_user(void) {
     // Enable the LED layers
     rgblight_layers = my_rgb_layers;
     rgblight_set_layer_state(0, true);
-    set_num_led_red();
+    rgblight_setrgb(0xff,0xff,0xff);
+    set_num_led_green();
 }
 
 layer_state_t layer_state_set_user(layer_state_t state) {
@@ -201,7 +217,9 @@ layer_state_t layer_state_set_user(layer_state_t state) {
 
     // Both layers will light up if both kb layers are active
     //rgblight_set_layer_state(0, layer_state_cmp(state, DEFAULT_LAYER));
-    rgblight_set_layer_state(1, layer_state_cmp(state, PLAIN_LAYER));
+    //rgblight_set_layer_state(0, layer_state_cmp(state, PLAIN_LAYER));
+    rgblight_set_layer_state(0, layer_state_cmp(state, PLAIN_LAYER));
+
 
     PLAIN_ENABLED = layer_state_cmp(state, PLAIN_LAYER);
 
@@ -258,30 +276,29 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 #endif
 */
   switch (keycode) {
+
     // sends raw hid 0xdeadbabe[00|01]
     case DP_MMUTE:
-            memset(raw_data,0,RAW_EPSIZE);
         if (record->event.pressed) {
-            raw_data[0] = 0xde;
-            raw_data[1] = 0xad;
-            raw_data[2] = 0xba;
-            raw_data[3] = 0xbe;
-            raw_data[4] = 0x00;
-            raw_hid_send(raw_data, sizeof(raw_data));
+            send_0xdeadbabe(0x00);
 
         } else {
-            raw_data[0] = 0xde;
-            raw_data[1] = 0xad;
-            raw_data[2] = 0xba;
-            raw_data[3] = 0xbe;
-            raw_data[4] = 0x01;
-            raw_hid_send(raw_data, sizeof(raw_data));
+            send_0xdeadbabe(0x01);
         }
         break;
 
-        return false;
-  }
 
+    // sends raw hid 0xdeadbabe[03]
+    case DP_TGMUTE:
+        if (record->event.pressed) {
+            send_0xdeadbabe(0x03);
+
+        } else {
+        }
+        break;
+
+    return false;
+  }
 
   return true;
 
@@ -301,12 +318,12 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   ),
     // Custom Macro-Pad
    [FN_LAYER] = LAYOUT_numpad_5x4(
-    _______,   KC_MPLY, KC_MUTE, KC_VOLD,
+    _______,   KC_MPLY, KC_MUTE,   KC_VOLD,
     KC_F19,   KC_F20,   KC_F21,
     KC_F16,   KC_F17,   KC_F18,     KC_VOLU,
     KC_F13,   KC_F14,   KC_F15,
-    DP_MMUTE,           KC_F22,     KC_CALC
-  )
+    DP_MMUTE,           DP_TGMUTE,     KC_CALC
+  ),
 
 };
 
