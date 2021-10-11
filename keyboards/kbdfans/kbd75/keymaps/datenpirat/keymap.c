@@ -152,6 +152,7 @@ const rgblight_segment_t PROGMEM my_layer1_layer[] = RGBLIGHT_LAYER_SEGMENTS(
 );
 const rgblight_segment_t PROGMEM my_layer2_layer[] = RGBLIGHT_LAYER_SEGMENTS(
     { 0, 16, HSV_PINK}
+    //{ 0, 0, 0, 0, 0}
 );
 const rgblight_segment_t PROGMEM my_fn1_layer[] = RGBLIGHT_LAYER_SEGMENTS(
     { 0, 16, 0, 0, 0},
@@ -713,7 +714,7 @@ void keyboard_post_init_user(void) {  // Call the keymap level matrix init.
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
     // DEFAULT
-        [DEFAULT_LAYER] = LAYOUT(
+    [DEFAULT_LAYER] = LAYOUT(
         LT(PLAIN_LAYER, KC_ESC),   KC_F1,    KC_F2,    KC_F3,    KC_F4,    KC_F5,    KC_F6,    KC_F7,    KC_F8,    KC_F9,    KC_F10,   KC_F11,   KC_F12,   TD(TD_PSCR),  KC_HOME,   KC_INS,
         KC_GRV,   KC_1,     KC_2,     KC_3,     KC_4,     KC_5,     KC_6,     KC_7,     KC_8,     KC_9,     KC_0,     DP_SCSZ,  TD(TD_AKZENT),   XXXXXXX,  KC_BSPC,    KC_PGUP,
         KC_TAB,   KC_Q,     KC_W,     KC_E,     KC_R,     KC_T,     KC_Y,     KC_U,     KC_I,     KC_O,     KC_P,     KC_LBRC,  KC_RBRC,  KC_BSLS,              KC_PGDN ,
@@ -734,7 +735,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
     // Shift Layer
 	[SHIFT_LAYER] = LAYOUT(
-        _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  DP_MMUTE,  _______,  _______,
+        _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,
         _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  XXXXXXX,  KC_UNSHIFT_DEL, _______,
         _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            _______,
         KC_ENT,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,                      _______,  _______,
@@ -778,7 +779,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         _______,  _______, _______,  _______,  _______, _______,  _______,  KC_PSLS,  KC_PAST,  _______,  KC_NLCK,  TG_SCSZ,  MARKUP_CODE,  XXXXXXX, _______,       _______,
         _______,  RGB_TOG,  RGB_MOD,  RGB_HUI,  RGB_HUD,  RGB_SAI,  RGB_SAD,  RGB_VAI,  RGB_VAD,  _______,  _______,  _______,  KC_VOLU,  KC_MUTE,                      _______,
         TG_SWCPS,  _______,  DP_SUDO,  _______ ,  _______,  _______,  _______,  _______,  _______,  TG(DISABLED_LAYER),  _______,  _______,            KC_PENT,             _______,
-        TG_SESFT,  _______,  KC_BRIU,  KC_BRID,  BL_DEC,  BL_INC,  BL_STEP,  _______,  _______,  _______,  KC_PDOT,  KC_VOLD,  TG_RSFTHM,                   KC_PGUP,  _______,
+        TG_SESFT,  _______,  KC_BRIU,  KC_BRID,  BL_DEC,  BL_INC,  BL_STEP,  _______,  DP_MMUTE,  _______,  KC_PDOT,  KC_VOLD,  TG_RSFTHM,                   KC_PGUP,  _______,
         RESET  ,  TG_LGRM,  DEBUG,                  KC_MPLY,  KC_MPLY,  KC_MPLY,                         _______,  _______,  KC_RGUI,           LCTL(LGUI(KC_LEFT)),   KC_PGDN,  LCTL(LGUI(KC_RGHT))
     ),
 
@@ -1011,7 +1012,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 raw_data[3] = 0xbe;
                 raw_data[4] = 0x00;
                 raw_hid_send(raw_data, sizeof(raw_data));
-                
+
             } else {
                 raw_data[0] = 0xde;
                 raw_data[1] = 0xad;
@@ -1021,7 +1022,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 raw_hid_send(raw_data, sizeof(raw_data));
             }
             break;
-        
+
         // toggle sexy shift
         case TG_SESFT:
             if (record->event.pressed) {

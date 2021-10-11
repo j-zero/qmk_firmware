@@ -32,5 +32,5 @@
 #define RGB_ACK_BLINK_TIME      500
 #define RGB_ACK_ON_LAYER        5
 #define RGB_ACK_OFF_LAYER       6
-
+#define RGBLIGHT_SLEEP
 //#define NO_ACTION_ONESHOT
