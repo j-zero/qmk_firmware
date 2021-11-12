@@ -34,3 +34,7 @@
 #define RGB_ACK_OFF_LAYER       6
 #define RGBLIGHT_SLEEP
 //#define NO_ACTION_ONESHOT
+
+
+#define MOUSEKEY_MOVE_DELTA 5
+#define MOUSEKEY_MAX_SPEED 10

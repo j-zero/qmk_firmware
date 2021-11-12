@@ -32,6 +32,7 @@ void matrix_init_kb(void) {
     PORTB &= ~(1<<0);
 
     matrix_init_user();
+    rgb_matrix_mode(RGB_MATRIX_CUSTOM_dummy_effect);
 }
 
 void matrix_scan_kb(void) {

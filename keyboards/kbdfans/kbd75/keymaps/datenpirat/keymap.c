@@ -776,7 +776,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     // Functions I, activated by APP
 	[FN_LAYER_1] = LAYOUT(
         TO(DEFAULT_LAYER), TG(PLAIN_LAYER), TG(FUNKY_LAYER), _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_PAUS, KC_SLCK , KC_NLCK,
-        _______,  _______, _______,  _______,  _______, _______,  _______,  KC_PSLS,  KC_PAST,  _______,  KC_NLCK,  TG_SCSZ,  MARKUP_CODE,  XXXXXXX, _______,       _______,
+        _______,  _______, _______,  _______,  _______, _______,  _______,  KC_PSLS,  KC_PAST,  _______,  _______,  TG_SCSZ,  MARKUP_CODE,  XXXXXXX, _______,       _______,
         _______,  RGB_TOG,  RGB_MOD,  RGB_HUI,  RGB_HUD,  RGB_SAI,  RGB_SAD,  RGB_VAI,  RGB_VAD,  _______,  _______,  _______,  KC_VOLU,  KC_MUTE,                      _______,
         TG_SWCPS,  _______,  DP_SUDO,  _______ ,  _______,  _______,  _______,  _______,  _______,  TG(DISABLED_LAYER),  _______,  _______,            KC_PENT,             _______,
         TG_SESFT,  _______,  KC_BRIU,  KC_BRID,  BL_DEC,  BL_INC,  BL_STEP,  _______,  DP_MMUTE,  _______,  KC_PDOT,  KC_VOLD,  TG_RSFTHM,                   KC_PGUP,  _______,
@@ -786,11 +786,11 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     // Functions II, activated by CAPS LOCK
     [FN_LAYER_2] = LAYOUT(
         TO(DEFAULT_LAYER),  TG_SESFT,  TG_SWCPS,  TG_RSFTHM,  TG_LGRM,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  HYPR(KC_INS),
-        _______ ,  KC_P1,   KC_P2,    KC_P3,    KC_P4,    KC_P5,    KC_P6,    KC_P7,    KC_P8,    KC_P9,    KC_P0, MEH(KC_MINS),  MARKUP_CODE,  XXXXXXX, REMOVE_LINE,  KC_MS_UP,
-        _______,  _______,  KC_WH_U,  _______,  MEH(KC_F24),  _______,  _______,  _______,  _______,  _______,  _______,  _______, KC_VOLU,  KC_MUTE,                KC_MS_DOWN,
-        _______,  KC_WH_L,  KC_WH_D,  KC_WH_R,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,                  KC_CALC,             _______ ,
-        _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______, _______,  _______,  KC_VOLD,                     _______, KC_VOLU, KC_MSTP,
-        _______,  KC_RGUI,  _______,                  KC_MPLY,  KC_MPLY,  KC_MPLY,                      _______,  _______,   _______,             KC_MPRV, KC_VOLD,KC_MNXT
+        _______ ,  KC_P1,   KC_P2,    KC_P3,    KC_P4,    KC_P5,    KC_P6,    KC_P7,    KC_P8,    KC_P9,    KC_P0, MEH(KC_MINS),  MARKUP_CODE,  XXXXXXX, REMOVE_LINE,  KC_WH_U,
+        _______,  KC_BTN1,  KC_MS_U,  KC_BTN2,  MEH(KC_F24),  _______,  _______,  _______,  _______,  _______,  _______,  _______, KC_VOLU,  KC_MUTE,                KC_WH_D,
+        _______,  KC_MS_L,  KC_MS_D,  KC_MS_R,  KC_WBAK,  _______,  _______,  KC_WFWD,  _______,  _______,  _______,  _______,                  KC_CALC,             _______ ,
+        _______,  KC_ACL0,  KC_ACL1,  KC_ACL2,  _______,  _______,  _______,  _______,  _______, _______,  _______,  KC_VOLD,                     KC_MPLY, KC_VOLU, KC_MSTP,
+        _______,  KC_RGUI,  KC_ENT,                  KC_MPLY,  KC_MPLY,  KC_MPLY,                      _______,  _______,   _______,             KC_MPRV, KC_VOLD,KC_MNXT
     ),
 
 };
@@ -891,7 +891,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                             unregister_code(KC_LSFT);
                         }
                         else{
-                            tap_code(KC_HOME);
+                            tap_code(KC_HOME); // else tap HOME
                         }
                     }
 
