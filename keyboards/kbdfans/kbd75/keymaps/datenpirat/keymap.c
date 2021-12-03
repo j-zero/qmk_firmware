@@ -44,7 +44,8 @@ enum {
     DISABLED_LAYER,
     FN_LAYER_1,
     FN_LAYER_2,
-    RSHIFT_LAYER
+    RSHIFT_LAYER,
+    SPACE_LAYER
 };
 
 //Tap Dance Declarations
@@ -572,13 +573,13 @@ void super_CAPS_reset (qk_tap_dance_state_t *state, void *user_data) {
             break;
     }
 
+    if(caps_alt_was_registered)
+        unregister_code(KC_LALT);
 
 
     caps_first_press = false;
     caps_alt_was_registered = false;
 
-    if(!caps_alt_was_registered)
-        unregister_code(KC_LALT);
 
     layer_off(FN_LAYER_2);
     tap_state.state = 0;
@@ -586,7 +587,7 @@ void super_CAPS_reset (qk_tap_dance_state_t *state, void *user_data) {
 
 void super_CTRL_start (qk_tap_dance_state_t *state, void *user_data) {
   if (state->count == 1){
-
+      layer_on(FUNKY_LAYER);
   }
 }
 
@@ -594,13 +595,11 @@ void super_CTRL_finished (qk_tap_dance_state_t *state, void *user_data) {
   tap_state.state = get_dance_state(state);
   switch (tap_state.state) {
     case SINGLE_TAP:
-        register_code(KC_HOME);
-        break;
-    case SINGLE_HOLD:
         register_code(KC_RCTL);
         break;
+    case SINGLE_HOLD:
+        break;
     case DOUBLE_TAP:
-        register_code(KC_RGUI);
         break;
     case DOUBLE_HOLD:
         register_code(KC_LCTL); register_code(KC_LALT);
@@ -617,30 +616,29 @@ void super_CTRL_finished (qk_tap_dance_state_t *state, void *user_data) {
 void super_CTRL_reset (qk_tap_dance_state_t *state, void *user_data) {
   switch (tap_state.state) {
     case SINGLE_TAP:
-        unregister_code(KC_HOME);
-        break;
-    case SINGLE_HOLD:
         unregister_code(KC_RCTL);
         break;
+    case SINGLE_HOLD:
+        break;
     case DOUBLE_TAP:
-        unregister_code(KC_RGUI);
         break;
     case DOUBLE_HOLD:
         unregister_code(KC_LCTL); unregister_code(KC_LALT);
         break;
     case TRIPLE_TAP:
-        unregister_code(KC_RGUI);
+
         break;
     default:
         unregister_code(KC_RCTL);
         break;
   }
+  layer_off(FUNKY_LAYER);
   tap_state.state = 0;
 }
 
 void super_PSCR_start (qk_tap_dance_state_t *state, void *user_data) {
   if (state->count == 1){
-      layer_on(FUNKY_LAYER);
+      //layer_on(FUNKY_LAYER);
   }
 }
 
@@ -659,6 +657,7 @@ void super_PSCR_finished (qk_tap_dance_state_t *state, void *user_data) {
         register_code(KC_PSCR);
         break;
   }
+  
 }
 
 void super_PSCR_reset (qk_tap_dance_state_t *state, void *user_data) {
@@ -675,7 +674,7 @@ void super_PSCR_reset (qk_tap_dance_state_t *state, void *user_data) {
         unregister_code(KC_PSCR);
         break;
   }
-    layer_off(FUNKY_LAYER);
+    //layer_off(FUNKY_LAYER);
 
   tap_state.state = 0;
 }
@@ -708,8 +707,6 @@ void keyboard_post_init_user(void) {  // Call the keymap level matrix init.
     set_caps_led(false);
 
 }
-
-
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
@@ -763,6 +760,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         _______,  _______,  _______,                      _______,  _______,  _______,                      _______,  _______,  _______,  KC_H,  KC_J,   KC_L
     ),
 
+    
     // Disabled
 	[DISABLED_LAYER] = LAYOUT(
         XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,
@@ -772,13 +770,14 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,  XXXXXXX,            XXXXXXX,  XXXXXXX,
         XXXXXXX,  XXXXXXX,  XXXXXXX,                      XXXXXXX,  XXXXXXX,  XXXXXXX,            XXXXXXX,MO(FN_LAYER_1),XXXXXXX,  XXXXXXX,  XXXXXXX,   XXXXXXX
     ),
+    
 
     // Functions I, activated by APP
 	[FN_LAYER_1] = LAYOUT(
         TO(DEFAULT_LAYER), TG(PLAIN_LAYER), TG(FUNKY_LAYER), _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_PAUS, KC_SLCK , KC_NLCK,
-        _______,  _______, _______,  _______,  _______, _______,  _______,  KC_PSLS,  KC_PAST,  _______,  _______,  TG_SCSZ,  MARKUP_CODE,  XXXXXXX, _______,       _______,
+        _______,  KC_ACL0, KC_ACL1,  KC_ACL2,  _______, _______,  _______,  KC_PSLS,  KC_PAST,  _______,  _______,  TG_SCSZ,  MARKUP_CODE,  XXXXXXX, _______,       _______,
         _______,  RGB_TOG,  RGB_MOD,  RGB_HUI,  RGB_HUD,  RGB_SAI,  RGB_SAD,  RGB_VAI,  RGB_VAD,  _______,  _______,  _______,  KC_VOLU,  KC_MUTE,                      _______,
-        TG_SWCPS,  _______,  DP_SUDO,  _______ ,  _______,  _______,  _______,  _______,  _______,  TG(DISABLED_LAYER),  _______,  _______,            KC_PENT,             _______,
+        TG_SWCPS,  _______,  DP_SUDO,  _______ ,  _______,  _______,  _______,  _______,  _______, TG(DISABLED_LAYER),  _______,  _______,            KC_PENT,             _______,
         TG_SESFT,  _______,  KC_BRIU,  KC_BRID,  BL_DEC,  BL_INC,  BL_STEP,  _______,  DP_MMUTE,  _______,  KC_PDOT,  KC_VOLD,  TG_RSFTHM,                   KC_PGUP,  _______,
         RESET  ,  TG_LGRM,  DEBUG,                  KC_MPLY,  KC_MPLY,  KC_MPLY,                         _______,  _______,  KC_RGUI,           LCTL(LGUI(KC_LEFT)),   KC_PGDN,  LCTL(LGUI(KC_RGHT))
     ),
@@ -787,11 +786,11 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [FN_LAYER_2] = LAYOUT(
         TO(DEFAULT_LAYER),  TG_SESFT,  TG_SWCPS,  TG_RSFTHM,  TG_LGRM,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  HYPR(KC_INS),
         _______ ,  KC_P1,   KC_P2,    KC_P3,    KC_P4,    KC_P5,    KC_P6,    KC_P7,    KC_P8,    KC_P9,    KC_P0, MEH(KC_MINS),  MARKUP_CODE,  XXXXXXX, REMOVE_LINE,  KC_WH_U,
-        _______,  KC_BTN1,  KC_MS_U,  KC_BTN2,  MEH(KC_F24),  _______,  _______,  _______,  _______,  _______,  _______,  _______, KC_VOLU,  KC_MUTE,                KC_WH_D,
-        _______,  KC_MS_L,  KC_MS_D,  KC_MS_R,  KC_WBAK,  _______,  _______,  KC_WFWD,  _______,  _______,  _______,  _______,                  KC_CALC,             _______ ,
-        _______,  KC_ACL0,  KC_ACL1,  KC_ACL2,  _______,  _______,  _______,  _______,  _______, _______,  _______,  KC_VOLD,                     KC_MPLY, KC_VOLU, KC_MSTP,
-        _______,  KC_RGUI,  KC_ENT,                  KC_MPLY,  KC_MPLY,  KC_MPLY,                      _______,  _______,   _______,             KC_MPRV, KC_VOLD,KC_MNXT
-    ),
+        _______,  _______,  KC_BTN2,  KC_MS_U,  KC_BTN1,  KC_BTN3,  _______,  KC_WH_U,  KC_UP,  _______,  _______,  _______, KC_VOLU,  KC_MUTE,                        KC_WH_D,
+        _______,  _______,  KC_MS_L,  KC_MS_D,  KC_MS_R,  KC_HOME, LCTL(KC_LEFT),  KC_LEFT,  KC_DOWN,  KC_RGHT,  LCTL(KC_RGHT),  KC_END,                    KC_CALC,             _______,
+        KC_LSFT,  _______,  _______,  _______,  _______,  KC_WBAK,  KC_WHOM,  KC_WFWD,  KC_WH_D, _______,  _______,  KC_VOLD,                     KC_MPLY, KC_VOLU, KC_MSTP,
+        _______,  KC_RGUI,  KC_ENT,                  KC_LSFT,  KC_LSFT,  KC_LSFT,                      _______,  _______,   _______,             KC_MPRV, KC_VOLD,KC_MNXT
+    )
 
 };
 

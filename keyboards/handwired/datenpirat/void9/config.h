@@ -36,9 +36,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #define MATRIX_ROW_PINS { F4, F5, F6 }
 #define MATRIX_COL_PINS { D1, D0, D4 }
-#define UNUSED_PINS
+
+// #define NUMBER_OF_ENCODERS 1
+#define ENCODERS_PAD_A { C6 }
+#define ENCODERS_PAD_B { D7 }
+#define ENCODER_RESOLUTION 4
+
+//#define ENCODER_DIRECTION_FLIP
 
 #define UNUSED_PINS
+
 
 /* COL2ROW or ROW2COL */
 #define DIODE_DIRECTION COL2ROW
