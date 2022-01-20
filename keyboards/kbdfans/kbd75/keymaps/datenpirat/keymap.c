@@ -107,6 +107,7 @@ static bool caps_alt_was_registered = false;
 
 static bool lshift_is_pressed = false;
 static bool rshift_is_pressed = false;
+//static bool space_was_pressed = false;
 
 static bool sexy_shift_enabled = true;
 static bool sexy_shift_on = false;
@@ -119,6 +120,7 @@ static uint16_t sexy_shift_last_keycode = 0;
 static uint16_t sexy_shift_tap_timer = 0;
 
 uint8_t mod_state;
+static uint8_t einselfcounter = 0;
 
 void print_keycode(uint16_t keycode);
 uint16_t get_td_keycode(uint16_t n);
@@ -755,8 +757,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,
         _______,  KC_P1,    KC_P2,    KC_P3,    KC_P4,    KC_P5,    KC_P6,    KC_P7,    KC_P8,    KC_P9,    KC_P0,  _______,  _______,  XXXXXXX,  _______, _______,
         _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_PPLS,  _______,      _______,
-        _______,  _______,  _______,  _______,  _______,  _______,  KC_LEFT,  KC_DOWN,  KC_UP,    KC_RGHT,  _______,  _______,                      _______,  _______,
-        _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_PMNS,  _______,            KC_K,  _______,
+        _______,  _______,  _______,  _______,  _______,  _______,  KC_LEFT,  KC_DOWN,  KC_UP,    KC_RGHT,  _______,  _______,                      KC_PENT,  _______,
+        _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_PDOT,  KC_PMNS,  _______,            KC_K,  _______,
         _______,  _______,  _______,                      _______,  _______,  _______,                      _______,  _______,  _______,  KC_H,  KC_J,   KC_L
     ),
 
@@ -777,7 +779,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         TO(DEFAULT_LAYER), TG(PLAIN_LAYER), TG(FUNKY_LAYER), _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_PAUS, KC_SLCK , KC_NLCK,
         _______,  KC_ACL0, KC_ACL1,  KC_ACL2,  _______, _______,  _______,  KC_PSLS,  KC_PAST,  _______,  _______,  TG_SCSZ,  MARKUP_CODE,  XXXXXXX, _______,       _______,
         _______,  RGB_TOG,  RGB_MOD,  RGB_HUI,  RGB_HUD,  RGB_SAI,  RGB_SAD,  RGB_VAI,  RGB_VAD,  _______,  _______,  _______,  KC_VOLU,  KC_MUTE,                      _______,
-        TG_SWCPS,  _______,  DP_SUDO,  _______ ,  _______,  _______,  _______,  _______,  _______, TG(DISABLED_LAYER),  _______,  _______,            KC_PENT,             _______,
+        TG_SWCPS,  _______,  DP_SUDO,  _______ ,  _______,  _______,  _______,  _______,  _______, TG(DISABLED_LAYER),  _______,  _______,            KC_CALC,             _______,
         TG_SESFT,  _______,  KC_BRIU,  KC_BRID,  BL_DEC,  BL_INC,  BL_STEP,  _______,  DP_MMUTE,  _______,  KC_PDOT,  KC_VOLD,  TG_RSFTHM,                   KC_PGUP,  _______,
         RESET  ,  TG_LGRM,  DEBUG,                  KC_MPLY,  KC_MPLY,  KC_MPLY,                         _______,  _______,  KC_RGUI,           LCTL(LGUI(KC_LEFT)),   KC_PGDN,  LCTL(LGUI(KC_RGHT))
     ),
@@ -786,9 +788,9 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [FN_LAYER_2] = LAYOUT(
         TO(DEFAULT_LAYER),  TG_SESFT,  TG_SWCPS,  TG_RSFTHM,  TG_LGRM,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  HYPR(KC_INS),
         _______ ,  KC_P1,   KC_P2,    KC_P3,    KC_P4,    KC_P5,    KC_P6,    KC_P7,    KC_P8,    KC_P9,    KC_P0, MEH(KC_MINS),  MARKUP_CODE,  XXXXXXX, REMOVE_LINE,  KC_WH_U,
-        _______,  _______,  KC_BTN2,  KC_MS_U,  KC_BTN1,  KC_BTN3,  _______,  KC_WH_U,  KC_UP,  _______,  _______,  _______, KC_VOLU,  KC_MUTE,                        KC_WH_D,
+        _______,  _______,  KC_BTN2,  KC_MS_U,  KC_BTN1,  KC_BTN3,  _______,  KC_WH_U,  KC_UP,  KC_PGUP,  _______,  _______, KC_VOLU,  KC_MUTE,                        KC_WH_D,
         _______,  _______,  KC_MS_L,  KC_MS_D,  KC_MS_R,  KC_HOME, LCTL(KC_LEFT),  KC_LEFT,  KC_DOWN,  KC_RGHT,  LCTL(KC_RGHT),  KC_END,                    KC_CALC,             _______,
-        KC_LSFT,  _______,  _______,  _______,  _______,  KC_WBAK,  KC_WHOM,  KC_WFWD,  KC_WH_D, _______,  _______,  KC_VOLD,                     KC_MPLY, KC_VOLU, KC_MSTP,
+        KC_LSFT,  _______,  _______,  _______,  _______,  KC_WBAK,  KC_WHOM,  KC_WFWD,  KC_WH_D, _______,  KC_PGDN,  KC_VOLD,                     KC_MPLY, KC_VOLU, KC_MSTP,
         _______,  KC_RGUI,  KC_ENT,                  KC_LSFT,  KC_LSFT,  KC_LSFT,                      _______,  _______,   _______,             KC_MPRV, KC_VOLD,KC_MNXT
     )
 
@@ -833,8 +835,26 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         }
     }
 
+    if(keycode != KC_1)
+        einselfcounter = 0;
+
     // default keycode processing
     switch (keycode) {
+
+        /*
+        case KC_SPC:
+            if (record->event.pressed) {
+                if(lshift_is_pressed && sexy_shift_enabled && !is_capslock_on())        // if lshift is still hold, enable sexy shift after space bar is pressed
+                    sexy_shift_start(keycode, KC_LSFT, SHIFT_LAYER);
+                if(rshift_is_pressed && sexy_shift_enabled && !is_capslock_on())        // if rshift is still hold, enable sexy shift after space bar is pressed
+                    sexy_shift_start(keycode, KC_RSFT, RSHIFT_LAYER);
+            }
+            else if (!record->event.pressed) {
+
+            }
+            break;
+        */
+ 
         case DP_LSFT:   // custom left shift
             if (record->event.pressed) {
                 lshift_is_pressed = true;
@@ -847,7 +867,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             }
             else if (!record->event.pressed) {
                 lshift_is_pressed = false;
-               if(sexy_shift_enabled && (sexy_shift_command_keycode == keycode) && !is_capslock_on()){
+                if(sexy_shift_enabled && ((sexy_shift_command_keycode == keycode)) && !is_capslock_on()){
                     sexy_shift_stop();
                     /*
                    if(shift_home_end_enabled && sexy_shift_is_tapped()){
@@ -865,6 +885,8 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 }
                 else
                     unregister_code(KC_LSFT);
+
+               
             }
             break;
 
@@ -880,9 +902,8 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             }
             else if (!record->event.pressed) {
                 rshift_is_pressed = false;
-                if(sexy_shift_enabled && (sexy_shift_command_keycode == keycode) && !is_capslock_on()){
+                if(sexy_shift_enabled && ((sexy_shift_command_keycode == keycode)) && !is_capslock_on()){
                     sexy_shift_stop();
-
                     if(shift_home_end_enabled && sexy_shift_is_tapped()){
                         if(lshift_is_pressed){  // if LSFT is pressed and RSFT is tapped, simulate LSFT+HOME
                             register_code(KC_LSFT);
@@ -893,11 +914,12 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                             tap_code(KC_HOME); // else tap HOME
                         }
                     }
-
+                    
                     sexy_shift_reset();
                 }
                 else
                     unregister_code(KC_RSFT);
+                
             }
             break;
 
@@ -937,6 +959,23 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             else if (!record->event.pressed) {
                 unregister_code(KC_DEL);
                 register_code(KC_LSFT);
+            }
+            break;
+        
+                // Shift + Backspace = Del
+        case KC_1:
+            if (record->event.pressed && get_mods() & MOD_BIT(KC_RSHIFT)) {
+                if(einselfcounter++ < 3)
+                    return true; // normal processing
+                else{
+                    unregister_code(KC_RSFT);
+                    SEND_STRING("111einself");
+                    register_code(KC_RSFT);
+                    einselfcounter = 0;
+                    return false;
+                }
+            }
+            else if (!record->event.pressed) {
             }
             break;
 
