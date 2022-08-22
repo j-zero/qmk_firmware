@@ -1,3 +1,4 @@
+
 #include QMK_KEYBOARD_H
 
 #include "raw_hid.h"
@@ -6,8 +7,14 @@
 #define SUCCESS 0x01
 #define FAILED 0xff
 
+
+#define CMD_VOL_UP      0x0a
+#define CMD_VOL_DOWN    0x0b
+
 static uint8_t raw_data[RAW_EPSIZE];
 void send_0xdeadbabe(uint8_t);
+
+bool encoder_rawhid = false;
 
 enum RAW_COMMAND_ID
 {
@@ -29,21 +36,23 @@ enum RAW_COMMAND_ID
 };
 
 enum layer_names {
-    _BASE
+    _BASE,
+    _MEDIA
 };
 
 enum custom_keycodes {
   DP_TGMUTE = SAFE_RANGE,
   DP_MMUTE,
-  DP_TMUTE
+  DP_TMUTE,
+  ENC_BUTTON,
+  DP_SWITCH,
 };
 
 led_config_t g_led_config = { {
     // Key Matrix to LED Index
-
-        { 6, 7, 8 },
-        { 5, 4, 3 },
-        { 0, 1, 2 }
+        { 8, 7, 6 },
+        { 3, 4, 5 },
+        { 2, 1, 0 }
     }, {
     // LED Index to Physical Position
         { 0,   0 }, { 112,  0 }, { 224,  0 },
@@ -53,8 +62,9 @@ led_config_t g_led_config = { {
     {
         // LED Index to Flag
         4,4,4,4,4,4,4,4,4
-    }
+    } 
 };
+
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
@@ -68,9 +78,14 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
  * `--------------------'
  */
     [_BASE] = LAYOUT_ortho_3x3(
-        RESET,    KC_WHOM,    KC_WFWD,
-        KC_MPRV,    KC_MPLY,    KC_MNXT,
-        KC_MSTP,    C(S(KC_M)),      KC_MUTE
+        RESET,       KC_MSTP,    KC_VOLU,
+        DP_TMUTE,    KC_MPLY,    DP_SWITCH,
+        DP_MMUTE,    DP_TGMUTE,  ENC_BUTTON
+    ),
+    [_MEDIA] = LAYOUT_ortho_3x3(
+        RESET,       KC_MSTP,    KC_VOLU,
+        DP_TMUTE,    KC_MPLY,    KC_VOLD,
+        DP_MMUTE,    DP_TGMUTE,  ENC_BUTTON
     )
 };
 
@@ -101,8 +116,10 @@ layer_state_t layer_state_set_user(layer_state_t state) {
     report[2] = biton32(state);
     raw_hid_send(report,RAW_EPSIZE);
     free(report);
+    encoder_rawhid = state == 0 ? true : false;
 #endif
 
+    
     return state;
 }
 
@@ -128,9 +145,16 @@ void rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
 bool encoder_update_user(uint8_t index, bool clockwise) {
     if (index == 0) { /* First encoder */
         if (clockwise) {
-            tap_code(KC_VOLU);
+            //tap_code(KC_VOLU);
+            if(encoder_rawhid)
+                send_0xdeadbabe(CMD_VOL_UP);
+            else
+                tap_code(KC_VOLU);
         } else {
-            tap_code(KC_VOLD);
+            if(encoder_rawhid)
+                send_0xdeadbabe(CMD_VOL_DOWN);
+            else
+                tap_code(KC_VOLD);
         }
     }
     return false;
@@ -191,6 +215,27 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         }
         break;
 
+    case ENC_BUTTON:
+        if (record->event.pressed) {
+            send_0xdeadbabe(0x0c);
+            //rgb_matrix_set_color(0, RGB_GREEN); 
+
+        } else {
+            send_0xdeadbabe(0x0d);
+            //rgb_matrix_set_color(0, RGB_RED); 
+        }
+        break;
+        
+    case DP_SWITCH:
+        if (record->event.pressed) {
+            send_0xdeadbabe(0x0e);
+            //rgb_matrix_set_color(0, RGB_GREEN); 
+
+        } else {
+            send_0xdeadbabe(0x0f);
+            //rgb_matrix_set_color(0, RGB_RED); 
+        }
+        break;
 
     // sends raw hid 0xdeadbabe[03]
     case DP_TGMUTE:

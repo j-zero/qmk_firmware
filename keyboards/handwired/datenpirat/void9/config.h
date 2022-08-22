@@ -19,12 +19,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "config_common.h"
 /* USB Device descriptor parameter */
+
 #define VENDOR_ID       0xFEED
 #define PRODUCT_ID      0x6062
 #define DEVICE_VER      0x0001
 #define MANUFACTURER    d@tenpir.at
-#define PRODUCT         VOID9
-#define DESCRIPTION     A handwired 3x3 Macropad
+
 
 #define TAPPING_TERM 200
 
@@ -63,7 +63,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // The pin connected to the data pin of the LEDs
 #define RGB_DI_PIN F7
 // The number of LEDs connected
-#define DRIVER_LED_TOTAL 9
+//#define DRIVER_LED_TOTAL 9
 
 
 #define RGB_DISABLE_WHEN_USB_SUSPENDED 1 // turn off effects when suspended
