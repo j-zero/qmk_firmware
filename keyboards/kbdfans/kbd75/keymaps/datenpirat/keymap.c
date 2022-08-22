@@ -6,6 +6,8 @@
 #define SUCCESS 0x01
 #define FAILED 0xff
 
+
+
 typedef union {
   uint32_t raw;
   struct {
@@ -72,7 +74,8 @@ enum custom_keycodes {
     DP_SUDO,    // adds "sudo " in front of line
     DP_SCSZ,    // custom ß on sweet caps
     DP_MMUTE,    // custom microphone mute key (sends 0xdeadbabe[00|01] over usb raw hid)
-    DP_1
+    DP_1,
+    MOUSE_SCROLL
 };
 
 enum RAW_COMMAND_ID
@@ -110,6 +113,8 @@ static bool lshift_is_pressed = false;
 static bool rshift_is_pressed = false;
 //static bool space_was_pressed = false;
 
+static bool mouse_scroll_active = false;
+
 static bool sexy_shift_enabled = true;
 static bool sexy_shift_on = false;
 static bool sexy_shift_tapped = false;
@@ -142,7 +147,7 @@ int get_dance_state (qk_tap_dance_state_t *state);
 void update_eeprom(void);
 
 void set_caps_led(bool enabled){
-  writePin(B2, !enabled);
+  writePin(CAPS_LED_PIN, !enabled);
 }
 
 bool is_capslock_on(void){
@@ -522,6 +527,7 @@ void super_CAPS_start (qk_tap_dance_state_t *state, void *user_data) {
       layer_on(FN_LAYER_2);
       caps_first_press = true;
       caps_alt_was_registered = false;
+      mouse_scroll_active = true;
   }
 }
 
@@ -586,6 +592,7 @@ void super_CAPS_reset (qk_tap_dance_state_t *state, void *user_data) {
 
     layer_off(FN_LAYER_2);
     tap_state.state = 0;
+    mouse_scroll_active = false;
 }
 
 void super_CTRL_start (qk_tap_dance_state_t *state, void *user_data) {
@@ -637,6 +644,7 @@ void super_CTRL_reset (qk_tap_dance_state_t *state, void *user_data) {
   }
   layer_off(FUNKY_LAYER);
   tap_state.state = 0;
+  
 }
 
 void super_PSCR_start (qk_tap_dance_state_t *state, void *user_data) {
@@ -690,6 +698,83 @@ qk_tap_dance_action_t tap_dance_actions[] = {
     [TD_PSCR]        = ACTION_TAP_DANCE_FN_ADVANCED(super_PSCR_start,super_PSCR_finished, super_PSCR_reset),
 };
 
+/*
+static uint16_t auto_buttons_timer;
+
+void ps2_mouse_moved_user(report_mouse_t *mouse_report) {
+    if (auto_buttons_timer) {
+        auto_buttons_timer = timer_read();
+    } else {
+        if (!is_mouse_moving) {
+            layer_on(SHIFT_LAYER);
+            auto_buttons_timer = timer_read();
+        }
+    }
+}
+
+void matrix_scan_user(void) {
+    if (auto_buttons_timer && (timer_elapsed(auto_buttons_timer) > AUTO_BUTTONS_TIMEOUT)) {
+        if (!is_mouse_moving) {
+            layer_off(SHIFT_LAYER);
+            auto_buttons_timer = 0;
+        }
+    }
+}
+*/
+
+void ps2_mouse_moved_user(report_mouse_t *mouse_report) {
+
+    bool scroll_mode_active = mouse_scroll_active || is_capslock_on();
+
+    static enum {
+        SCROLL_NONE,
+        SCROLL_BTN,
+        SCROLL_SENT,
+    } scroll_state                     = SCROLL_NONE;
+    
+    //static uint16_t scroll_button_time = 0;
+
+    if (scroll_mode_active) {
+        // l_shift mouse scroll (test)
+
+        if (scroll_state == SCROLL_NONE) {
+            //scroll_button_time = timer_read();
+            scroll_state       = SCROLL_BTN;
+        }
+
+        // If the mouse has moved, update the report to scroll instead of move the mouse
+        if (mouse_report->x || mouse_report->y) {
+            scroll_state    = SCROLL_SENT;
+            mouse_report->v = -mouse_report->y / (PS2_MOUSE_SCROLL_DIVISOR_V);
+            mouse_report->h = mouse_report->x / (PS2_MOUSE_SCROLL_DIVISOR_H);
+            mouse_report->x = 0;
+            mouse_report->y = 0;
+            /*
+            #ifdef PS2_MOUSE_INVERT_H
+                        mouse_report->h = -mouse_report->h;
+            #endif
+            #ifdef PS2_MOUSE_INVERT_V
+                        mouse_report->v = -mouse_report->v;
+            #endif
+            */
+        }
+    } else if (!scroll_mode_active) {
+        // None of the scroll buttons are pressed
+/*
+#if PS2_MOUSE_SCROLL_BTN_SEND
+        if (scroll_state == SCROLL_BTN && timer_elapsed(scroll_button_time) < PS2_MOUSE_SCROLL_BTN_SEND) {
+            PRESS_SCROLL_BUTTONS;
+            host_mouse_send(mouse_report);
+            _delay_ms(100);
+            RELEASE_SCROLL_BUTTONS;
+        }
+#endif
+*/
+        scroll_state = SCROLL_NONE;
+    }
+
+    //RELEASE_SCROLL_BUTTONS;
+}
 
 
 void keyboard_post_init_user(void) {  // Call the keymap level matrix init.
@@ -758,9 +843,9 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,
         _______,  KC_P1,    KC_P2,    KC_P3,    KC_P4,    KC_P5,    KC_P6,    KC_P7,    KC_P8,    KC_P9,    KC_P0,  _______,  _______,  XXXXXXX,  _______, _______,
         _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_PPLS,  _______,      _______,
-        _______,  _______,  _______,  _______,  _______,  _______,  KC_LEFT,  KC_DOWN,  KC_UP,    KC_RGHT,  _______,  _______,                      KC_PENT,  _______,
+        _______,  _______,  _______,  _______,  KC_BTN2,  _______,  KC_LEFT,  KC_DOWN,  KC_UP,    KC_RGHT,  _______,  _______,                      KC_PENT,  _______,
         _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_PDOT,  KC_PMNS,  _______,            KC_VOLU,  _______,
-        _______,  KC_RGUI,  _______,                      KC_MPLY,  KC_MPLY,  KC_MPLY,                      _______,  KC_MSTP,  _______,  KC_MPRV,  KC_VOLD,   KC_MNXT
+        _______,  KC_RGUI,  _______,                      KC_BTN1,  KC_BTN1,  KC_BTN1,                      _______,  KC_MSTP,  _______,  KC_MPRV,  KC_VOLD,   KC_MNXT
     ),
 
     
@@ -792,7 +877,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         _______,  _______,  KC_MS_U,  KC_WH_U,  _______,  _______,  _______,  KC_WH_U,  KC_UP,  KC_PGUP,  _______,  _______, KC_VOLU,  KC_MUTE,                        _______,
         _______,  _______,  KC_MS_D,  KC_WH_D,  _______,  _______, LCTL(KC_LEFT),  KC_LEFT,  KC_DOWN,  KC_RGHT,  LCTL(KC_RGHT),  _______,                    KC_CALC,             _______,
         KC_LSFT,  _______,  _______,  _______,  _______,  KC_WBAK,  KC_WHOM,  KC_WFWD,  KC_WH_D, _______,  KC_PGDN,  KC_VOLD,                     _______ , KC_WH_U, _______,
-        _______,  KC_RGUI,  KC_HOME,                  KC_LSFT,  KC_LSFT,  KC_LSFT,                      KC_END,  KC_MPLY,   KC_MSTP,             KC_WBAK, KC_WH_D,KC_WFWD
+        _______,  KC_RGUI,  KC_HOME,                  KC_BTN1,  KC_BTN1,  KC_BTN1,                      KC_END,  KC_MPLY,   KC_MSTP,             KC_WBAK, KC_WH_D,KC_WFWD
     )
 
 };
@@ -923,7 +1008,14 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 
             }
             break;
-
+        case MOUSE_SCROLL:
+            if (record->event.pressed) {
+                mouse_scroll_active = true;
+            } else {
+                mouse_scroll_active = false;
+            }
+            break;
+        
         case MARKUP_CODE:
             if (record->event.pressed) {
                 SEND_STRING("+ + + ");
@@ -966,7 +1058,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 // Shift + Backspace = Del
         case DP_1:
             if (record->event.pressed) {
-                if(get_mods() & MOD_BIT(KC_RSHIFT)){ // is shoft pressed?
+                if(get_mods() & MOD_BIT(KC_RSHIFT)){ // is shift pressed?
                     if(einselfcounter++ >= 3){
                         unregister_code(KC_RSFT);
                         SEND_STRING("111einself");
