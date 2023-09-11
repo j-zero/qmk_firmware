@@ -77,8 +77,15 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
  * |   1  |   2  |   3  |
  * `--------------------'
  */
+ /*
     [_BASE] = LAYOUT_ortho_3x3(
         RESET,       KC_MSTP,    KC_VOLU,
+        DP_TMUTE,    KC_MPLY,    DP_SWITCH,
+        DP_MMUTE,    DP_TGMUTE,  ENC_BUTTON
+    ),
+    */
+    [_BASE] = LAYOUT_ortho_3x3(
+        RESET,       KC_MSTP,    RESET,
         DP_TMUTE,    KC_MPLY,    DP_SWITCH,
         DP_MMUTE,    DP_TGMUTE,  ENC_BUTTON
     ),
@@ -146,14 +153,14 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
     if (index == 0) { /* First encoder */
         if (clockwise) {
             //tap_code(KC_VOLU);
-            if(encoder_rawhid)
-                send_0xdeadbabe(CMD_VOL_UP);
-            else
+            //if(encoder_rawhid)
+            //    send_0xdeadbabe(CMD_VOL_UP);
+            //else
                 tap_code(KC_VOLU);
         } else {
-            if(encoder_rawhid)
-                send_0xdeadbabe(CMD_VOL_DOWN);
-            else
+            //if(encoder_rawhid)
+            //    send_0xdeadbabe(CMD_VOL_DOWN);
+            //else
                 tap_code(KC_VOLD);
         }
     }
