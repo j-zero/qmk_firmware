@@ -9,7 +9,7 @@
 #define LCPO_KEYS KC_LCTL, KC_LALT, KC_7
 #define RCPC_KEYS KC_RCTL, KC_RALT, KC_0
 
-/*
+/* Enable for PS/2
 #define PS2_CLOCK_PIN   B6
 #define PS2_DATA_PIN    F7
 */
